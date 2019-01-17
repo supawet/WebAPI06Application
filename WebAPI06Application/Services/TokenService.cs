@@ -23,6 +23,7 @@ namespace WebAPI06Application.Services
                 string encodedUserCredentials = Convert.ToBase64String(System.Text.ASCIIEncoding.ASCII.GetBytes("user:password"));
                 string userData = "username=" + username + "&password=" + password + "&grant_type=password";
                 HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create("http://localhost:57533/api/token");
+                //HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create("https://bblamapiwealthplan.azurewebsites.net/api/token");
                 httpWebRequest.Accept = "application/json";
                 httpWebRequest.Method = "POST";
                 httpWebRequest.ContentType = "application/x-www-form-urlencoded";
@@ -124,7 +125,7 @@ namespace WebAPI06Application.Services
             }
             catch (Exception ex)
             {
-                return "SignupPersistance error";// ex.ToString();
+                return "SignupPersistance error " + ex.ToString();
             }
         }
     }

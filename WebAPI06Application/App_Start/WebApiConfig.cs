@@ -38,6 +38,13 @@ namespace WebAPI06Application
                 );
 
             config.Routes.MapHttpRoute(
+                name: "WealthPlanTarget",
+                routeTemplate: "api/WealthPlanTarget/{id}",
+                defaults: new { controller = "WealthPlanTarget", id = RouteParameter.Optional }//,
+                //constraints: new { id="length(2)"}
+                );
+
+            config.Routes.MapHttpRoute(
                 name: "Signup",
                 routeTemplate: "api/Signup/{id}",
                 defaults: new { controller = "Signup", id = RouteParameter.Optional }//,

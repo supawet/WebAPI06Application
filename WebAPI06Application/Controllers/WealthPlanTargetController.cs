@@ -12,40 +12,40 @@ namespace WebAPI06Application.Controllers
     //[AuthenticationFilter]
     //[Authorize]
 
-    [RoutePrefix("api/WealthPlan")]
+    [RoutePrefix("api/WealthPlanTarget")]
 
-    public class WealthPlanController : ApiController
+    public class WealthPlanTargetController : ApiController
     {
-        // GET: api/WealthPlan
+        // GET: api/WealthPlanTarget
         public IEnumerable<string> Get()
         {
             return new string[] { "Hello REST API", "I am Authorized" };
         }
 
-        // GET: api/WealthPlan/5
+        // GET: api/WealthPlanTarget/5
         public string Get(int id)
         {
             return "value";
         }
 
-        // POST: api/WealthPlan
+        // POST: api/WealthPlanTarget
         //public void Post([FromBody]string value)
-        //public WealthPlanResponse Post([FromBody]string value)
-        public WealthPlanResponse Post(WealthPlan wealthPlan)
+        //public WealthPlanTargetResponse Post([FromBody]string value)
+        public WealthPlanTargetResponse Post(WealthPlanTarget wealthPlanTarget)
         {
-            WealthPlanPersistance wealthPlanPersistance = new WealthPlanPersistance();
-            if (wealthPlanPersistance == null)
+            WealthPlanTargetPersistance wealthPlanTargetPersistance = new WealthPlanTargetPersistance();
+            if (wealthPlanTargetPersistance == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.NotFound));
             }
 
-            //WealthPlan wealthPlan = new WealthPlan();
+            //WealthPlanTarget wealthPlanTarget = new WealthPlanTarget();
 
-            return wealthPlanPersistance.GetWealthPlan(wealthPlan);
+            return wealthPlanTargetPersistance.GetWealthPlanTarget(wealthPlanTarget);
         }
-        
 
-        // PUT: api/WealthPlan/5
+
+        // PUT: api/WealthPlanTarget/5
         public void Put(int id, [FromBody]string value)
         {
         }

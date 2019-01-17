@@ -152,6 +152,7 @@
     <Compile Include="Controllers\SignupController.cs" />
     <Compile Include="Controllers\Signup_VerifyController.cs" />
     <Compile Include="Controllers\WealthPlanController.cs" />
+    <Compile Include="Controllers\WealthPlanTargetController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -161,6 +162,7 @@
     <Compile Include="Models\Token.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WealthPlan.cs" />
+    <Compile Include="Models\WealthPlanTarget.cs" />
     <Compile Include="OtpAuthenticator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Providers\OAuthProvider.cs" />
@@ -169,10 +171,12 @@
     <Compile Include="SignupPersistance.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="WealthPlanPersistance.cs" />
+    <Compile Include="WealthPlanTargetPersistance.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="DBConnection.config" />
     <None Include="packages.config" />
+    <None Include="Properties\PublishProfiles\bblamapiwealthplan - Web Deploy.pubxml" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

@@ -36,6 +36,12 @@ namespace WebAPI06Application.Models
         public decimal Expense_Fix_Home_Year { get; set; }
         public decimal Expense_Fix_Car_Month { get; set; }
         public decimal Expense_Fix_Car_Year { get; set; }
+        public decimal Expense_Fix_Credit_Card_Month { get; set; }
+        public decimal Expense_Fix_Credit_Card_Year { get; set; }
+        public decimal Expense_Fix_Car_Insurance_Premium_Month { get; set; }
+        public decimal Expense_Fix_Car_Insurance_Premium_Year { get; set; }
+        public decimal Expense_Fix_Social_Security_Month { get; set; }
+        public decimal Expense_Fix_Social_Security_Year { get; set; }
         public decimal Expense_Fix_Other_Month { get; set; }
         public decimal Expense_Fix_Other_Year { get; set; }
         public decimal Expense_Vary_Four_Requisites_Month { get; set; }
@@ -50,11 +56,21 @@ namespace WebAPI06Application.Models
         public decimal Expense_Vary_Donation_Year { get; set; }
         public decimal Expense_Vary_Other_Month { get; set; }
         public decimal Expense_Vary_Other_Year { get; set; }
-        public decimal Expense_Saving_and_Investing_Saving { get; set; }
-        public decimal Expense_Saving_and_Investing_Investing_RMF { get; set; }
-        public decimal Expense_Saving_and_Investing_Investing_LTF { get; set; }
-        public decimal Expense_Saving_and_Investing_Investing_PVF { get; set; }
-        public decimal Expense_Saving_and_Investing_Investing_Other { get; set; }
+        public decimal Expense_Saving_and_Investing_Saving_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Saving_Year { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_RMF_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_RMF_Year { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_LTF_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_LTF_Year { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_PVF_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_PVF_Year { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_Mutual_Fund_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_Mutual_Fund_Year { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_Common_Stock_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_Common_Stock_Year { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_Other_Month { get; set; }
+        public decimal Expense_Saving_and_Investing_Investing_Other_Year { get; set; }
+
     }
     public class WealthPlanResponse
     {
@@ -65,9 +81,10 @@ namespace WebAPI06Application.Models
         public decimal Total_Expense { get; set; }
         public decimal Liquidity_Analysis_Result { get; set; }
         public decimal Ability_To_Pay_Short_Term_Debt { get; set; }
+        public decimal Ratio_Liability_Per_Asset { get; set; }
         public decimal Ability_To_Pay_Mid_Term_Debt { get; set; }
-        public decimal Payment_Of_Debt_From_Income { get; set; }
         public decimal Saving_Analysis_Result { get; set; }
+        public decimal Payment_Of_Debt_From_Income { get; set; }
         public string Message { get; set; }
         public string Status { get; set; }
     }
