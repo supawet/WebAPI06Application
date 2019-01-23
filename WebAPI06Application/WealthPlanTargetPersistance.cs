@@ -15,6 +15,9 @@ using System.Configuration;
 
 using System.Security.Cryptography;
 using System.Web.Security;
+
+using Excel.FinancialFunctions;
+
 namespace WebAPI06Application
 {
     public class WealthPlanTargetPersistance
@@ -27,6 +30,9 @@ namespace WebAPI06Application
             OleDbDataReader mySQLReader = null;
 
             var hash = System.Security.Cryptography.SHA512.Create();
+
+            //ArrayList proceedsArray = new ArrayList();
+            List<Proceeds> proceedsArray = new List<Proceeds>();
 
             WealthPlanTargetResponse wealthPlanTargetResponse = new WealthPlanTargetResponse();
             wealthPlanTargetResponse.Message = "Not Found";
@@ -43,6 +49,55 @@ namespace WebAPI06Application
                 command.Connection = conn;
                 command.CommandTimeout = 0;
 
+                double futureValue = 0;
+
+                /*  -------------   คำอธิบาย  -------------
+                    lowest = ต่ำสุด
+                    downtrend = ขาลง
+                    normL= ปกติ L
+                    normH = ปกติ H
+                    uptrend = ขาขึ้น
+                */
+                //  -------------   ค่า z-Score  -------------
+                Dictionary<string, double> zScore = new Dictionary<string, double>(){
+                    { "lowest", -1.9600},
+                    { "downtrend", -1.1503},
+                    { "normL", 0.0000},
+                    { "normH", 1.1503},
+                    { "uptrend", 1.9600}
+                };
+                //  -------------   ผลตอบแทนตามความเสี่ยง  -------------
+                Dictionary<int, ExpectedReturn> expectedReturn = new Dictionary<int, ExpectedReturn>(){
+                    { 1, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }},
+                    { 2, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }},
+                    { 3, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }},
+                    { 4, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }},
+                    { 5, new ExpectedReturn { SD= 0.0450, RET= 0.0500 }},
+                    { 6, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }},
+                    { 7, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }},
+                    { 8, new ExpectedReturn { SD= 0.0000, RET= 0.0000 }}
+                };
+
+                Proceeds proceeds = null;
+                //Suggest an alternative
+
+                for (int i = 1; i <= wealthPlanTarget.Investment_Period*12; i++) {
+                    proceeds = new Proceeds();
+                    futureValue = wealthPlanTarget.Investment_Per_Month * ((Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), i)) - 1) / (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0) + wealthPlanTarget.Initial_Investment * (Math.Pow(1 +
+    (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), i));
+
+                    proceeds.Month = i;
+                    proceeds.Lowest = Math.Round(futureValue + zScore["lowest"] * (expectedReturn[wealthPlanTarget.Investment_Risk].SD * Math.Sqrt(i / 12.0)) * futureValue, 4);
+                    proceeds.Downtrend = Math.Round(futureValue + zScore["downtrend"] * (expectedReturn[wealthPlanTarget.Investment_Risk].SD * Math.Sqrt(i / 12.0)) * futureValue, 4);
+                    proceeds.NormL = Math.Round(futureValue + zScore["normL"] * (expectedReturn[wealthPlanTarget.Investment_Risk].SD * Math.Sqrt(i / 12.0)) * futureValue, 4);
+                    proceeds.NormH = Math.Round(futureValue + zScore["normH"] * (expectedReturn[wealthPlanTarget.Investment_Risk].SD * Math.Sqrt(i / 12.0)) * futureValue, 4);
+                    proceeds.Uptrend = Math.Round(futureValue + zScore["uptrend"] * (expectedReturn[wealthPlanTarget.Investment_Risk].SD * Math.Sqrt(i / 12.0)) * futureValue,4);
+
+                    proceedsArray.Add(proceeds);
+                }
+
+                wealthPlanTargetResponse.Plot = proceedsArray;
+                /*
                 //--------------------------------  Insert Log   ----------------
                 command.CommandType = CommandType.Text;
                 command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(?,'WealthPlan',GETDATE(),1)";
@@ -50,10 +105,46 @@ namespace WebAPI06Application
                 command.Parameters.AddWithValue("@AccessToken", wealthPlanTarget.AccessToken);
                 command.ExecuteNonQuery();
                 //--------------------------------  /Insert Log  ----------------
+                */
 
                 //wealthPlanTargetResponse.Saving_Analysis_Result = Math.Round(Saving_Analysis_Result, 2);
                 wealthPlanTargetResponse.Message = "Success";
                 wealthPlanTargetResponse.Status = "OK";
+
+                // P is the periodic deposit
+                // N is number of periods per year
+                // R is the effective annual rate
+                // r is the periodic rate
+                // T is the total number of periods
+                // A is the future value
+
+                /*
+                double P = wealthPlanTarget.Investment_Per_Month;   //ลงทุนต่อเดือน
+                int N = 12;
+                double R = wealthPlanTarget.Interest / 100;  //อัตราผลตอบแทน
+                double r = Math.Pow(1 + R, 1 / N) - 1;
+                int T = wealthPlanTarget.Investment_Period; //จำนวนเดือน
+
+                double A = 0;
+                for (int i = 1; i <= T; i++)
+                    A = A + P * Math.Pow(1 + r, i);
+                double Interest = A - P;
+                */
+
+                //decimal futureValues = this.CalculateFutureValue(wealthPlanTarget.Investment_Per_Month, wealthPlanTarget.Interest / 100 / 12, wealthPlanTarget.Investment_Period);
+
+                //double futureValue = Financial.Fv(wealthPlanTarget.Interest, wealthPlanTarget.Investment_Period, -wealthPlanTarget.Investment_Per_Month,0, 0);
+
+                /*
+                FV = MonthlyDeposit * (((1 + MonthlyInterest)^Months - 1 ) 
+ / MonthlyInterest ) + StartingBalance * ( 1 + MonthlyInterest )^Months
+ */
+ /*
+                futureValue = wealthPlanTarget.Investment_Per_Month * ((Math.Pow(1+((wealthPlanTarget.Interest/100) / 12),(wealthPlanTarget.Investment_Period*12))) - 1) / ((wealthPlanTarget.Interest/100) / 12) + wealthPlanTarget.Initial_Investment * (Math.Pow(1+
+                    ((wealthPlanTarget.Interest / 100) / 12),(wealthPlanTarget.Investment_Period*12)));
+                    */
+                //wealthPlanTargetResponse.Test = futureValue;
+
                 return wealthPlanTargetResponse;
             }
 
@@ -75,5 +166,17 @@ namespace WebAPI06Application
                 }
             }
         }
+
+        private decimal CalculateFutureValue(decimal monthlyInvestment,decimal monthlyInterestRate, int months)
+        {
+            decimal futureValue = 0m;
+            for (int i = 0; i < months; i++)
+            {
+                futureValue = (futureValue + monthlyInvestment) * (1 + monthlyInterestRate);
+            }
+
+            return futureValue;
+        }
     }
 }
+ 
