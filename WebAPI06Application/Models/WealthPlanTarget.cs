@@ -34,6 +34,12 @@ namespace WebAPI06Application.Models
 
     public class WealthPlanTargetResponse
     {
+        public string Target { get; set; }
+        public double? Target_Month { get; set; }
+        public double? Target_Amount { get; set; }
+        public double? Recommended_Choice1 { get; set; }
+        public double? Recommended_Choice2 { get; set; }
+        public double? Recommended_Choice3 { get; set; }
         public List<Proceeds> Plot { get; set; }
         public string Message { get; set; }
         public string Status { get; set; }
