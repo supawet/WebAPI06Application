@@ -40,6 +40,11 @@ namespace WebAPI06Application.Models
         public double? Recommended_Choice1 { get; set; }
         public double? Recommended_Choice2 { get; set; }
         public double? Recommended_Choice3 { get; set; }
+        public double Amount_Needed { get; set; }
+        public double Investment_Period { get; set; }
+        public double Initial_Investment { get; set; }
+        public double Investment_Per_Month { get; set; }
+        public int Investment_Risk { get; set; }
         public List<Proceeds> Plot { get; set; }
         public string Message { get; set; }
         public string Status { get; set; }

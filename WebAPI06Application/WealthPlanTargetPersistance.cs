@@ -18,6 +18,9 @@ using System.Web.Security;
 
 using Excel.FinancialFunctions;
 
+using System.Net.Http;
+using System.Net.Http.Headers;
+
 namespace WebAPI06Application
 {
     public class WealthPlanTargetPersistance
@@ -28,15 +31,25 @@ namespace WebAPI06Application
             OleDbConnection conn = null;
             OleDbCommand command = null;
             OleDbDataReader mySQLReader = null;
-
+            
             var hash = System.Security.Cryptography.SHA512.Create();
+
+            HttpContext httpContext = HttpContext.Current;
+            string authHeader = httpContext.Request.Headers["Authorization"];
 
             //ArrayList proceedsArray = new ArrayList();
             List<Proceeds> proceedsArray = new List<Proceeds>();
+            List<Proceeds> proceedsArrayTmp = new List<Proceeds>();
 
             WealthPlanTargetResponse wealthPlanTargetResponse = new WealthPlanTargetResponse();
             wealthPlanTargetResponse.Message = "Not Found";
             wealthPlanTargetResponse.Status = "Fail";
+
+            wealthPlanTargetResponse.Amount_Needed = wealthPlanTarget.Amount_Needed;
+            wealthPlanTargetResponse.Investment_Period = wealthPlanTarget.Investment_Period;
+            wealthPlanTargetResponse.Initial_Investment = wealthPlanTarget.Initial_Investment;
+            wealthPlanTargetResponse.Investment_Per_Month = wealthPlanTarget.Investment_Per_Month;
+            wealthPlanTargetResponse.Investment_Risk = wealthPlanTarget.Investment_Risk;
 
             try
             {
@@ -48,6 +61,32 @@ namespace WebAPI06Application
                 command = new OleDbCommand();
                 command.Connection = conn;
                 command.CommandTimeout = 0;
+
+                //  ทำการเก็บ log ด้วย token
+                if (authHeader != null && authHeader.StartsWith("Bearer"))
+                {
+                    authHeader = authHeader.Substring("Bearer ".Length).Trim();
+                    /*
+                    //--------------------------------  Insert Log   ----------------
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(?,'WealthPlanTarget',GETDATE(),1)";
+                    command.Parameters.Clear();
+                    command.Parameters.AddWithValue("@AccessToken", authHeader);
+                    command.ExecuteNonQuery();
+
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = "insert into SrvA_WealthPlanTarget_Log_Cloud(AccessToken,Amount_Needed,Investment_Period,Initial_Investment,Investment_Per_Month,Investment_Risk,Dt_Gen,Flag) values(?,'WealthPlanTarget',GETDATE(),1)";
+                    command.Parameters.Clear();
+                    command.Parameters.AddWithValue("@AccessToken", authHeader);
+                    command.Parameters.AddWithValue("@Amount_Needed", wealthPlanTarget.Amount_Needed);
+                    command.Parameters.AddWithValue("@Investment_Period", wealthPlanTarget.Investment_Period);
+                    command.Parameters.AddWithValue("@Initial_Investment", wealthPlanTarget.Initial_Investment);
+                    command.Parameters.AddWithValue("@Investment_Per_Month", wealthPlanTarget.Investment_Per_Month);
+                    command.Parameters.AddWithValue("@Investment_Risk", wealthPlanTarget.Investment_Risk);
+                    command.ExecuteNonQuery();
+                    //--------------------------------  /Insert Log  ----------------
+                    */
+                }
 
                 /*  -------------   คำอธิบาย  -------------
                     lowest = ต่ำสุด
@@ -82,8 +121,10 @@ namespace WebAPI06Application
                 double futureValue = 0;
                 double endingWealth = 0;
                 bool endingWealthBool = true;
+                double separateGraph = 0;
 
-                int periodLoop = (int)wealthPlanTarget.Investment_Period * 12 * 5;
+                //int periodLoop = (int)wealthPlanTarget.Investment_Period * 12 * 5;
+                int periodLoop = 180;
                 double endingWealthTarget = 0;  //เป้าหมายที่ได้
 
                 for (int i = 1; i <= periodLoop; i++) {
@@ -98,20 +139,37 @@ namespace WebAPI06Application
                     proceeds.Uptrend = Math.Round(futureValue + zScore["uptrend"] * (expectedReturn[wealthPlanTarget.Investment_Risk].SD * Math.Sqrt(i / 12.0)) * futureValue,4);
 
                     proceedsArray.Add(proceeds);
-
+                    /*
                     if (i == (int)wealthPlanTarget.Investment_Period * 12)
                     {
                         endingWealthTarget = futureValue;
                     }
+                    */
 
                     if (endingWealthBool && wealthPlanTarget.Amount_Needed <= futureValue)
                     {
                         endingWealth = i;
+                        endingWealthTarget = futureValue;
                         endingWealthBool = false;
                     }
                 }
 
-                if (wealthPlanTarget.Amount_Needed < endingWealthTarget)   //  ถึงเป้า
+                separateGraph = wealthPlanTarget.Investment_Period * 12 > endingWealth ? wealthPlanTarget.Investment_Period * 12 : endingWealth;
+                if(separateGraph <= 60)
+                {
+                    periodLoop = 60;
+                }else if(separateGraph <= 120){
+                    periodLoop = 120;
+                }else{
+                    periodLoop = 180;
+                }
+                for (int i = 1; i <= periodLoop; i++)
+                {
+                    proceedsArrayTmp.Add(proceedsArray[i-1]);
+                }
+
+
+                if (wealthPlanTarget.Amount_Needed < endingWealthTarget && endingWealth <= wealthPlanTarget.Investment_Period * 12)   //  ถึงเป้า
                 {
                     wealthPlanTargetResponse.Target = "Y";
                     wealthPlanTargetResponse.Target_Month = Math.Round(endingWealth, MidpointRounding.AwayFromZero);
@@ -151,19 +209,8 @@ namespace WebAPI06Application
                     //----------------- เพิ่มเงินลงทุนต่อเดือน(บาท) --------------------------
                 }
 
-
-                wealthPlanTargetResponse.Plot = proceedsArray;
-                /*
-                //--------------------------------  Insert Log   ----------------
-                command.CommandType = CommandType.Text;
-                command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(?,'WealthPlan',GETDATE(),1)";
-                command.Parameters.Clear();
-                command.Parameters.AddWithValue("@AccessToken", wealthPlanTarget.AccessToken);
-                command.ExecuteNonQuery();
-                //--------------------------------  /Insert Log  ----------------
-                */
-
-                //wealthPlanTargetResponse.Saving_Analysis_Result = Math.Round(Saving_Analysis_Result, 2);
+                wealthPlanTargetResponse.Plot = proceedsArrayTmp;
+                
                 wealthPlanTargetResponse.Message = "Success";
                 wealthPlanTargetResponse.Status = "OK";
 
@@ -195,10 +242,10 @@ namespace WebAPI06Application
                 FV = MonthlyDeposit * (((1 + MonthlyInterest)^Months - 1 ) 
  / MonthlyInterest ) + StartingBalance * ( 1 + MonthlyInterest )^Months
  */
- /*
-                futureValue = wealthPlanTarget.Investment_Per_Month * ((Math.Pow(1+((wealthPlanTarget.Interest/100) / 12),(wealthPlanTarget.Investment_Period*12))) - 1) / ((wealthPlanTarget.Interest/100) / 12) + wealthPlanTarget.Initial_Investment * (Math.Pow(1+
-                    ((wealthPlanTarget.Interest / 100) / 12),(wealthPlanTarget.Investment_Period*12)));
-                    */
+                /*
+                               futureValue = wealthPlanTarget.Investment_Per_Month * ((Math.Pow(1+((wealthPlanTarget.Interest/100) / 12),(wealthPlanTarget.Investment_Period*12))) - 1) / ((wealthPlanTarget.Interest/100) / 12) + wealthPlanTarget.Initial_Investment * (Math.Pow(1+
+                                   ((wealthPlanTarget.Interest / 100) / 12),(wealthPlanTarget.Investment_Period*12)));
+                                   */
                 //wealthPlanTargetResponse.Test = futureValue;
 
                 return wealthPlanTargetResponse;
