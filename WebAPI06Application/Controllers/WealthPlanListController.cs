@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+
 using WebAPI06Application.Models;
 
 namespace WebAPI06Application.Controllers
@@ -11,44 +12,45 @@ namespace WebAPI06Application.Controllers
     //[AuthenticationFilter]
     //[Authorize]
 
-    [RoutePrefix("api/Login")]
+    [RoutePrefix("api/WealthPlanList")]
 
-    public class LoginController : ApiController
+    public class WealthPlanListController : ApiController
     {
-        // GET: api/Login
+        // GET: api/WealthPlanList
         public IEnumerable<string> Get()
         {
             return new string[] { "Hello REST API", "I am Authorized" };
         }
 
-        // GET: api/Login/5
+        // GET: api/WealthPlanList/5
         public string Get(int id)
         {
-            return "Hello Authorized API with ID = " + id;
+            return "value";
         }
 
-        // POST: api/Login
+        // POST: api/WealthPlanList
         //public void Post([FromBody]string value)
-        //public LoginResponse Post([FromBody]string value)
-        public LoginResponse Post(Login login)
+        //public WealthPlanListResponse Post([FromBody]string value)
+        public WealthPlanListResponse Post(WealthPlanList wealthPlanList)
         {
-            LoginPersistance loginPersistance = new LoginPersistance();
-            if (loginPersistance == null)
+            WealthPlanListPersistance wealthPlanListPersistance = new WealthPlanListPersistance();
+            if (wealthPlanListPersistance == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.NotFound));
             }
 
-            //Signup signup = new Signup();
+            //WealthPlan wealthPlan = new WealthPlan();
 
-            return loginPersistance.GetLogin(login);
+            return wealthPlanListPersistance.GetWealthPlanList(wealthPlanList);
         }
 
-        // PUT: api/Login/5
+
+        // PUT: api/WealthPlanList/5
         public void Put(int id, [FromBody]string value)
         {
         }
 
-        // DELETE: api/Login/5
+        // DELETE: api/WealthPlanList/5
         public void Delete(int id)
         {
         }

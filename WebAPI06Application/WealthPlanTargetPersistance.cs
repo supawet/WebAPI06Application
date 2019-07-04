@@ -4,7 +4,8 @@ using System.Linq;
 using System.Web;
 
 using System.Data;
-using System.Data.OleDb;
+//using System.Data.OleDb;
+using System.Data.Odbc;
 using System.Data.SqlClient;
 
 using System.Collections;
@@ -28,10 +29,16 @@ namespace WebAPI06Application
         //public ArrayList GetWealthPlanTarget(WealthPlanTarget wealthPlanTarget)
         public WealthPlanTargetResponse GetWealthPlanTarget(WealthPlanTarget wealthPlanTarget)
         {
-            OleDbConnection conn = null;
-            OleDbCommand command = null;
-            OleDbDataReader mySQLReader = null;
-            
+            /*
+            OdbcConnection conn = null;
+            OdbcCommand command = null;
+            OdbcDataReader mySQLReader = null;
+            */
+
+            SqlConnection conn = null;
+            SqlCommand command = null;
+            SqlDataReader mySQLReader = null;
+
             var hash = System.Security.Cryptography.SHA512.Create();
 
             HttpContext httpContext = HttpContext.Current;
@@ -54,11 +61,13 @@ namespace WebAPI06Application
             try
             {
                 string myConnectionString = ConfigurationManager.ConnectionStrings["localDB"].ConnectionString; ;
-                conn = new OleDbConnection(myConnectionString);
+                //conn = new OleDbConnection(myConnectionString);
+                conn = new SqlConnection(myConnectionString);
 
                 conn.Open();
 
-                command = new OleDbCommand();
+                //command = new OleDbCommand();
+                command = new SqlCommand();
                 command.Connection = conn;
                 command.CommandTimeout = 0;
 

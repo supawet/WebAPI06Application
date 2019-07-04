@@ -7,7 +7,10 @@ namespace WebAPI06Application.Models
 {
     public class WealthPlan
     {
+        public string Action { get; set; }
         public string AccessToken { get; set; }
+        public string WealthPlanName { get; set; }
+        public string Mobile_No { get; set; }
         public decimal Balance_Sheet_Asset_Liquidity_Cash { get; set; }
         public decimal Balance_Sheet_Asset_Liquidity_Deposit { get; set; }
         public decimal Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund { get; set; }
