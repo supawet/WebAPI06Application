@@ -39,6 +39,10 @@ namespace WebAPI06Application
             SqlCommand command = null;
             SqlDataReader mySQLReader = null;
 
+            bool hasRows = false;
+
+            string[] actions = { "A", "D", "U", "I" };
+
             var hash = System.Security.Cryptography.SHA512.Create();
 
             HttpContext httpContext = HttpContext.Current;
@@ -71,11 +75,13 @@ namespace WebAPI06Application
                 command.Connection = conn;
                 command.CommandTimeout = 0;
 
-                //  ทำการเก็บ log ด้วย token
+                //  ทำการเก็บ log ด้วย token   
+                //  ตอนนี้ยังไม่ต้องมี
+                /*
                 if (authHeader != null && authHeader.StartsWith("Bearer"))
                 {
                     authHeader = authHeader.Substring("Bearer ".Length).Trim();
-                    /*
+                    
                     //--------------------------------  Insert Log   ----------------
                     command.CommandType = CommandType.Text;
                     command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(?,'WealthPlanTarget',GETDATE(),1)";
@@ -94,8 +100,326 @@ namespace WebAPI06Application
                     command.Parameters.AddWithValue("@Investment_Risk", wealthPlanTarget.Investment_Risk);
                     command.ExecuteNonQuery();
                     //--------------------------------  /Insert Log  ----------------
-                    */
+                    
                 }
+                */
+
+                SqlParameter param = null;
+
+                if (wealthPlanTarget.AccessToken == null || wealthPlanTarget.AccessToken.Trim() == "")
+                {
+                    //wealthPlan.AccessToken = "test2";    //for test only
+                    //wealthPlan.WealthPlanName = "WealthPlan 1";    //for test only
+
+                    wealthPlanTargetResponse.Message = "AccessToken can not be null or empty";
+                    wealthPlanTargetResponse.Status = "Fail";
+                    return wealthPlanTargetResponse;
+                }   //  end if wealthPlanTarget.AccessToken == null
+
+                if (wealthPlanTarget.WealthPlanTargetName == null || wealthPlanTarget.WealthPlanTargetName.Trim() == "")
+                {
+                    wealthPlanTargetResponse.Message = "WealthPlanTarget Name can not be null or empty";
+                    wealthPlanTargetResponse.Status = "Fail";
+                    return wealthPlanTargetResponse;
+                }   //  end if wealthPlanTarget.WealthPlanName == null
+
+                if (wealthPlanTarget.Action == null || wealthPlanTarget.Action.Trim() == "")
+                {
+                    wealthPlanTargetResponse.Message = "Action can not be null or empty";
+                    wealthPlanTargetResponse.Status = "Fail";
+                    return wealthPlanTargetResponse;
+                }   //  end if wealthPlanTarget.Action == null
+
+                if (!actions.Contains(wealthPlanTarget.Action.ToUpper()))
+                {
+                    wealthPlanTargetResponse.Message = "Action can not be null or empty or invalid";
+                    wealthPlanTargetResponse.Status = "Fail";
+                    return wealthPlanTargetResponse;
+                }   //  end if wealthPlan.Action not in A,D,U,I
+
+                //  start Main
+                //--------------------------------  Check Access Token   ----------------
+
+                //--------------------------------  Check Access Token   ----------------
+
+                //--------------------------------  Insert Log   ----------------
+                command.CommandType = CommandType.Text;
+                command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(@AccessToken,'WealthPlanTarget',GETDATE(),1)";
+
+                command.Parameters.Clear();
+                param = null;
+
+                param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
+                param.Value = wealthPlanTarget.AccessToken == null ? "" : wealthPlanTarget.AccessToken.Trim();
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
+
+                command.ExecuteNonQuery();
+                //--------------------------------  /Insert Log  ----------------
+
+                //--------------------------------  Check WealthPlanTargetName  ----------------
+                command.CommandType = CommandType.Text;
+                command.CommandText = "select wpt.WealthPlanTargetName, li.Mobile_No from SrvA_WealthPlanTarget_Cloud wpt left join SrvA_Login_Cloud li on wpt.AccessToken = li.AccessToken and wpt.Flag = 1 where Mobile_No = (select top 1 Mobile_No from SrvA_Login_Cloud where Flag = 1 and AccessToken = @AccessToken) and wpt.WealthPlanTargetName = @WealthPlanTargetName";
+
+                command.Parameters.Clear();
+                param = null;
+
+                param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
+                param.Value = wealthPlanTarget.AccessToken == null ? "" : wealthPlanTarget.AccessToken.Trim();
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
+
+                param = new SqlParameter("@WealthPlanTargetName", System.Data.SqlDbType.NVarChar, 200);
+                param.Value = wealthPlanTarget.WealthPlanTargetName == null ? "" : wealthPlanTarget.WealthPlanTargetName.Trim();
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
+
+                mySQLReader = command.ExecuteReader();
+
+                if (mySQLReader.HasRows) hasRows = true;
+
+                while (mySQLReader.Read())
+                {
+                    //mySQLReader.GetString(mySQLReader.GetOrdinal("UnitHolder"));
+                    //forgotResponse.Message = mySQLReader.GetDataTypeName(mySQLReader.GetOrdinal("Mobile_No"));
+                    //forgotResponse.Message = mySQLReader.GetValue(mySQLReader.GetOrdinal("Mobile_No")).ToString();
+                    wealthPlanTarget.Mobile_No = mySQLReader.GetString(mySQLReader.GetOrdinal("Mobile_No"));
+                    //forgotResponse.Message = "Waiting for OTP";
+                }
+
+                mySQLReader.Close();
+                //--------------------------------  /Check WealthPlanTargetName  ----------------
+
+                switch (wealthPlanTarget.Action.ToUpper())
+                {
+                    case "A":
+                        if (hasRows)
+                        {
+                            wealthPlanTargetResponse.Message = "WealthPlanTargetName can not be duplicate";
+                            wealthPlanTargetResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            //--------------------------------  Insert WealthPlanTarget   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "insert into SrvA_WealthPlanTarget_Cloud(AccessToken,WealthPlanTargetName,Amount_Needed,Investment_Period,Initial_Investment,Investment_Per_Month,Investment_Risk,Dt_Gen,Flag) values(@AccessToken,@WealthPlanTargetName,@Amount_Needed,@Investment_Period,@Initial_Investment,@Investment_Per_Month,@Investment_Risk,GETDATE(),1)";
+
+                            command.Parameters.Clear();
+                            param = null;
+
+                            param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
+                            param.Value = wealthPlanTarget.AccessToken == null ? "" : wealthPlanTarget.AccessToken.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@WealthPlanTargetName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlanTarget.WealthPlanTargetName == null ? "" : wealthPlanTarget.WealthPlanTargetName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Amount_Needed", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Amount_Needed == null ? 0 : wealthPlanTarget.Amount_Needed;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Investment_Period", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Investment_Period == null ? 0 : wealthPlanTarget.Investment_Period;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Initial_Investment", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Initial_Investment == null ? 0 : wealthPlanTarget.Initial_Investment;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Investment_Per_Month", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Investment_Per_Month == null ? 0 : wealthPlanTarget.Investment_Per_Month;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Investment_Risk", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Investment_Risk == null ? 0 : wealthPlanTarget.Investment_Risk;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            command.ExecuteNonQuery();
+                            //--------------------------------  /Insert WealthPlanTarget  ----------------
+                            wealthPlanTargetResponse.Message = "Success";
+                            wealthPlanTargetResponse.Status = "OK";
+                        }
+                        break;
+                    case "U":
+                        if (!hasRows)
+                        {
+                            wealthPlanTargetResponse.Message = "Can not find this name";
+                            wealthPlanTargetResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            //--------------------------------  Update WealthPlanTarget   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "update SrvA_WealthPlanTarget_Cloud set Flag = 0 where WealthPlanTargetName = @WealthPlanTargetName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
+
+                            command.Parameters.Clear();
+                            param = null;
+
+                            param = new SqlParameter("@WealthPlanTargetName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlanTarget.WealthPlanTargetName == null ? "" : wealthPlanTarget.WealthPlanTargetName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Mobile_No", System.Data.SqlDbType.NVarChar, 20);
+                            param.Value = wealthPlanTarget.Mobile_No == null ? "" : wealthPlanTarget.Mobile_No.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            command.ExecuteNonQuery();
+                            //--------------------------------  Update WealthPlanTarget   ----------------
+
+                            //--------------------------------  Insert WealthPlanTarget   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "insert into SrvA_WealthPlanTarget_Cloud(AccessToken,WealthPlanTargetName,Amount_Needed,Investment_Period,Initial_Investment,Investment_Per_Month,Investment_Risk,Dt_Gen,Flag) values(@AccessToken,@WealthPlanTargetName,@Amount_Needed,@Investment_Period,@Initial_Investment,@Investment_Per_Month,@Investment_Risk,GETDATE(),1)";
+
+                            command.Parameters.Clear();
+                            param = null;
+
+                            param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
+                            param.Value = wealthPlanTarget.AccessToken == null ? "" : wealthPlanTarget.AccessToken.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@WealthPlanTargetName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlanTarget.WealthPlanTargetName == null ? "" : wealthPlanTarget.WealthPlanTargetName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Amount_Needed", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Amount_Needed == null ? 0 : wealthPlanTarget.Amount_Needed;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Investment_Period", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Investment_Period == null ? 0 : wealthPlanTarget.Investment_Period;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Initial_Investment", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Initial_Investment == null ? 0 : wealthPlanTarget.Initial_Investment;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Investment_Per_Month", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Investment_Per_Month == null ? 0 : wealthPlanTarget.Investment_Per_Month;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Investment_Risk", System.Data.SqlDbType.Float);
+                            param.Value = wealthPlanTarget.Investment_Risk == null ? 0 : wealthPlanTarget.Investment_Risk;
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            command.ExecuteNonQuery();
+                            //--------------------------------  /Insert WealthPlanTarget  ----------------
+                            wealthPlanTargetResponse.Message = "Success";
+                            wealthPlanTargetResponse.Status = "OK";
+                        }
+                        break;
+                    case "D":
+                        if (!hasRows)
+                        {
+                            wealthPlanTargetResponse.Message = "Can not find this name";
+                            wealthPlanTargetResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            //--------------------------------  Delete WealthPlanTarget   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "update SrvA_WealthPlanTarget_Cloud set Flag = 0 where WealthPlanTargetName = @WealthPlanTargetName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
+
+                            command.Parameters.Clear();
+                            param = null;
+
+                            param = new SqlParameter("@WealthPlanTargetName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlanTarget.WealthPlanTargetName == null ? "" : wealthPlanTarget.WealthPlanTargetName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Mobile_No", System.Data.SqlDbType.NVarChar, 20);
+                            param.Value = wealthPlanTarget.Mobile_No == null ? "" : wealthPlanTarget.Mobile_No.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            command.ExecuteNonQuery();
+                            //--------------------------------  Delete WealthPlanTarget   ----------------
+                            wealthPlanTargetResponse.Message = "Success";
+                            wealthPlanTargetResponse.Status = "OK";
+                        }
+                        break;
+                    case "I":
+
+                        wealthPlanTargetResponse.Amount_Needed = 0;
+                        wealthPlanTargetResponse.Investment_Period = 0;
+                        wealthPlanTargetResponse.Initial_Investment = 0;
+                        wealthPlanTargetResponse.Investment_Per_Month = 0;
+                        wealthPlanTargetResponse.Investment_Risk = 0;
+
+                        if (!hasRows)
+                        {
+                            wealthPlanTargetResponse.Message = "Data not found";
+                            wealthPlanTargetResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            /*
+                            List<WealthPlanTargetInfo> WealthPlanTargetinfo = new List<WealthPlanTargetInfo>();
+
+                            WealthPlanTargetInfo wpti = null;
+                            */
+
+                            //--------------------------------  Info WealthPlan   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "select * from SrvA_WealthPlanTarget_Cloud where Flag = 1 and WealthPlanTargetName = @WealthPlanTargetName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
+
+                            command.Parameters.Clear();
+                            param = null;
+
+                            param = new SqlParameter("@WealthPlanTargetName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlanTarget.WealthPlanTargetName == null ? "" : wealthPlanTarget.WealthPlanTargetName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Mobile_No", System.Data.SqlDbType.NVarChar, 20);
+                            param.Value = wealthPlanTarget.Mobile_No == null ? "" : wealthPlanTarget.Mobile_No.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            mySQLReader = command.ExecuteReader();
+
+                            while (mySQLReader.Read())
+                            {   /*
+                                wpti = new WealthPlanTargetInfo();
+
+                                wealthPlanTarget.Amount_Needed = mySQLReader.GetDouble(mySQLReader.GetOrdinal("Amount_Needed"));
+                                wpti.Amount_Needed = wealthPlanTarget.Amount_Needed;
+                                */
+
+                                wealthPlanTargetResponse.Amount_Needed = mySQLReader.GetDouble(mySQLReader.GetOrdinal("Amount_Needed"));
+                                wealthPlanTargetResponse.Investment_Period = mySQLReader.GetDouble(mySQLReader.GetOrdinal("Investment_Period"));
+                                wealthPlanTargetResponse.Initial_Investment = mySQLReader.GetDouble(mySQLReader.GetOrdinal("Initial_Investment"));
+                                wealthPlanTargetResponse.Investment_Per_Month = mySQLReader.GetDouble(mySQLReader.GetOrdinal("Investment_Per_Month"));
+                                wealthPlanTargetResponse.Investment_Risk = mySQLReader.GetInt32(mySQLReader.GetOrdinal("Investment_Risk"));
+
+                                //WealthPlanTargetinfo.Add(wpti);
+                            }
+                            mySQLReader.Close();
+                            //--------------------------------  Info WealthPlan   ----------------
+                            //wealthPlanTargetResponse.Data = WealthPlanTargetinfo;
+                            wealthPlanTargetResponse.Message = "Success";
+                            wealthPlanTargetResponse.Status = "OK";
+                        }
+                        break;
+                    default: break;
+                }   //  end switch
 
                 /*  -------------   คำอธิบาย  -------------
                     lowest = ต่ำสุด
@@ -218,10 +542,14 @@ namespace WebAPI06Application
                     //----------------- เพิ่มเงินลงทุนต่อเดือน(บาท) --------------------------
                 }
 
-                wealthPlanTargetResponse.Plot = proceedsArrayTmp;
+                if (wealthPlanTargetResponse.Status == "OK")
+                {
+                    wealthPlanTargetResponse.Plot = proceedsArrayTmp;
+                }
                 
-                wealthPlanTargetResponse.Message = "Success";
-                wealthPlanTargetResponse.Status = "OK";
+                
+                //wealthPlanTargetResponse.Message = "Success";
+                //wealthPlanTargetResponse.Status = "OK";
 
                 // P is the periodic deposit
                 // N is number of periods per year

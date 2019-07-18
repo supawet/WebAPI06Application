@@ -6,11 +6,15 @@ using System.Net.Http;
 using System.Web.Http;
 
 using WebAPI06Application.Models;
+using System.Web.Http.Cors;
 
 namespace WebAPI06Application.Controllers
 {
     //[AuthenticationFilter]
     //[Authorize]
+
+    //[EnableCors(origins: "http://localhost", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
 
     [RoutePrefix("api/WealthPlan")]
 

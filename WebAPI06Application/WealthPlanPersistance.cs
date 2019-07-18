@@ -36,7 +36,7 @@ namespace WebAPI06Application
 
             bool hasRows = false;
 
-            string[] actions = {"A","D","U"};
+            string[] actions = {"A","D","U","I"};
 
             var hash = System.Security.Cryptography.SHA512.Create();
 
@@ -82,18 +82,18 @@ namespace WebAPI06Application
 
                 SqlParameter param = null;
 
-                wealthPlan.AccessToken = "test2";    //for test only
-                /*
-                if (wealthPlan.AccessToken == null)
+                //wealthPlan.AccessToken = "test2";    //for test only
+                
+                if (wealthPlan.AccessToken == null || wealthPlan.AccessToken.Trim() == "")
                 {
-                    wealthPlan.AccessToken = "test2";    //for test only
+                    //wealthPlan.AccessToken = "test2";    //for test only
                     //wealthPlan.WealthPlanName = "WealthPlan 1";    //for test only
 
-                    //wealthPlanResponse.Message = "Success";
-                    //wealthPlanResponse.Status = "OK";
+                    wealthPlanResponse.Message = "AccessToken can not be null or empty";
+                    wealthPlanResponse.Status = "Fail";
+                    return wealthPlanResponse;
                 }   //  end if wealthPlan.AccessToken == null
-                else 
-                */
+                
                 if(wealthPlan.WealthPlanName == null || wealthPlan.WealthPlanName.Trim() == "")
                 {
                     wealthPlanResponse.Message = "WealthPlan Name can not be null or empty";
@@ -101,60 +101,71 @@ namespace WebAPI06Application
                     return wealthPlanResponse;
                 }   //  end if wealthPlan.WealthPlanName == null
 
-                if (!actions.Contains(wealthPlan.Action))
+                if (wealthPlan.Action == null || wealthPlan.Action.Trim() == "")
+                {
+                    wealthPlanResponse.Message = "Action can not be null or empty";
+                    wealthPlanResponse.Status = "Fail";
+                    return wealthPlanResponse;
+                }   //  end if wealthPlan.Action == null
+
+                if (!actions.Contains(wealthPlan.Action.ToUpper()))
                 {
                     wealthPlanResponse.Message = "Action can not be null or empty or invalid";
                     wealthPlanResponse.Status = "Fail";
                     return wealthPlanResponse;
-                }   //  end if wealthPlan.Action not in A,D,U
+                }   //  end if wealthPlan.Action not in A,D,U,I
 
                 //  start Main
-                    //--------------------------------  Insert Log   ----------------
-                    command.CommandType = CommandType.Text;
-                    command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(@AccessToken,'WealthPlan',GETDATE(),1)";
+                //--------------------------------  Check Access Token   ----------------
 
-                    command.Parameters.Clear();
-                    param = null;
+                //--------------------------------  Check Access Token   ----------------
 
-                    param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
-                    param.Value = wealthPlan.AccessToken == null ? "" : wealthPlan.AccessToken.Trim();
-                    param.Direction = ParameterDirection.Input;
-                    command.Parameters.Add(param);
+                //--------------------------------  Insert Log   ----------------
+                command.CommandType = CommandType.Text;
+                command.CommandText = "insert into SrvA_Log_Cloud(AccessToken,AccessModule,Dt_Gen,Flag) values(@AccessToken,'WealthPlan',GETDATE(),1)";
 
-                    command.ExecuteNonQuery();
-                    //--------------------------------  /Insert Log  ----------------
+                command.Parameters.Clear();
+                param = null;
 
-                    //--------------------------------  Check WealthPlanName  ----------------
-                    command.CommandType = CommandType.Text;
-                    command.CommandText = "select wp.WealthPlanName, li.Mobile_No from SrvA_WealthPlan_Cloud wp left join SrvA_Login_Cloud li on wp.AccessToken = li.AccessToken and wp.Flag = 1 where Mobile_No = (select top 1 Mobile_No from SrvA_Login_Cloud where Flag = 1 and AccessToken = @AccessToken) and wp.WealthPlanName = @WealthPlanName";
+                param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
+                param.Value = wealthPlan.AccessToken == null ? "" : wealthPlan.AccessToken.Trim();
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
 
-                    command.Parameters.Clear();
-                    param = null;
+                command.ExecuteNonQuery();
+                //--------------------------------  /Insert Log  ----------------
 
-                    param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
-                    param.Value = wealthPlan.AccessToken == null ? "" : wealthPlan.AccessToken.Trim();
-                    param.Direction = ParameterDirection.Input;
-                    command.Parameters.Add(param);
+                //--------------------------------  Check WealthPlanName  ----------------
+                command.CommandType = CommandType.Text;
+                command.CommandText = "select wp.WealthPlanName, li.Mobile_No from SrvA_WealthPlan_Cloud wp left join SrvA_Login_Cloud li on wp.AccessToken = li.AccessToken and wp.Flag = 1 where Mobile_No = (select top 1 Mobile_No from SrvA_Login_Cloud where Flag = 1 and AccessToken = @AccessToken) and wp.WealthPlanName = @WealthPlanName";
 
-                    param = new SqlParameter("@WealthPlanName", System.Data.SqlDbType.NVarChar, 200);
-                    param.Value = wealthPlan.WealthPlanName == null ? "" : wealthPlan.WealthPlanName.Trim();
-                    param.Direction = ParameterDirection.Input;
-                    command.Parameters.Add(param);
+                command.Parameters.Clear();
+                param = null;
 
-                    mySQLReader = command.ExecuteReader();
+                param = new SqlParameter("@AccessToken", System.Data.SqlDbType.NVarChar, -1);   //nvarchar(max)
+                param.Value = wealthPlan.AccessToken == null ? "" : wealthPlan.AccessToken.Trim();
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
 
-                    if (mySQLReader.HasRows) hasRows = true;
+                param = new SqlParameter("@WealthPlanName", System.Data.SqlDbType.NVarChar, 200);
+                param.Value = wealthPlan.WealthPlanName == null ? "" : wealthPlan.WealthPlanName.Trim();
+                param.Direction = ParameterDirection.Input;
+                command.Parameters.Add(param);
+
+                mySQLReader = command.ExecuteReader();
+
+                if (mySQLReader.HasRows) hasRows = true;
                     
-                    while (mySQLReader.Read())
-                    {
-                        //mySQLReader.GetString(mySQLReader.GetOrdinal("UnitHolder"));
-                        //forgotResponse.Message = mySQLReader.GetDataTypeName(mySQLReader.GetOrdinal("Mobile_No"));
-                        //forgotResponse.Message = mySQLReader.GetValue(mySQLReader.GetOrdinal("Mobile_No")).ToString();
-                        wealthPlan.Mobile_No = mySQLReader.GetString(mySQLReader.GetOrdinal("Mobile_No"));
-                        //forgotResponse.Message = "Waiting for OTP";
-                    }
+                while (mySQLReader.Read())
+                {
+                    //mySQLReader.GetString(mySQLReader.GetOrdinal("UnitHolder"));
+                    //forgotResponse.Message = mySQLReader.GetDataTypeName(mySQLReader.GetOrdinal("Mobile_No"));
+                    //forgotResponse.Message = mySQLReader.GetValue(mySQLReader.GetOrdinal("Mobile_No")).ToString();
+                    wealthPlan.Mobile_No = mySQLReader.GetString(mySQLReader.GetOrdinal("Mobile_No"));
+                    //forgotResponse.Message = "Waiting for OTP";
+                }
                     
-                    mySQLReader.Close();
+                mySQLReader.Close();
                 //--------------------------------  /Check WealthPlanName  ----------------
 
                 switch (wealthPlan.Action.ToUpper()) {
@@ -564,8 +575,15 @@ namespace WebAPI06Application
                         }
                         break;
                     case "U":
-                        //--------------------------------  Update WealthPlan   ----------------
-                        command.CommandType = CommandType.Text;
+                        if (!hasRows)
+                        {
+                            wealthPlanResponse.Message = "Can not find this name";
+                            wealthPlanResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            //--------------------------------  Update WealthPlan   ----------------
+                            command.CommandType = CommandType.Text;
                         command.CommandText = "update SrvA_WealthPlan_Cloud set Flag = 0 where WealthPlanName = @WealthPlanName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
 
                         command.Parameters.Clear();
@@ -979,29 +997,267 @@ namespace WebAPI06Application
                         //--------------------------------  /Insert WealthPlan  ----------------
                         wealthPlanResponse.Message = "Success";
                         wealthPlanResponse.Status = "OK";
+                }
                         break;
                     case "D":
-                        //--------------------------------  Delete WealthPlan   ----------------
-                        command.CommandType = CommandType.Text;
-                        command.CommandText = "update SrvA_WealthPlan_Cloud set Flag = 0 where WealthPlanName = @WealthPlanName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
+                        if (!hasRows)
+                        {
+                            wealthPlanResponse.Message = "Can not find this name";
+                            wealthPlanResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            //--------------------------------  Delete WealthPlan   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "update SrvA_WealthPlan_Cloud set Flag = 0 where WealthPlanName = @WealthPlanName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
 
-                        command.Parameters.Clear();
-                        param = null;
+                            command.Parameters.Clear();
+                            param = null;
 
-                        param = new SqlParameter("@WealthPlanName", System.Data.SqlDbType.NVarChar, 200);
-                        param.Value = wealthPlan.WealthPlanName == null ? "" : wealthPlan.WealthPlanName.Trim();
-                        param.Direction = ParameterDirection.Input;
-                        command.Parameters.Add(param);
+                            param = new SqlParameter("@WealthPlanName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlan.WealthPlanName == null ? "" : wealthPlan.WealthPlanName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
 
-                        param = new SqlParameter("@Mobile_No", System.Data.SqlDbType.NVarChar, 20);
-                        param.Value = wealthPlan.Mobile_No == null ? "" : wealthPlan.Mobile_No.Trim();
-                        param.Direction = ParameterDirection.Input;
-                        command.Parameters.Add(param);
+                            param = new SqlParameter("@Mobile_No", System.Data.SqlDbType.NVarChar, 20);
+                            param.Value = wealthPlan.Mobile_No == null ? "" : wealthPlan.Mobile_No.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
 
-                        command.ExecuteNonQuery();
-                        //--------------------------------  Delete WealthPlan   ----------------
-                        wealthPlanResponse.Message = "Success";
-                        wealthPlanResponse.Status = "OK";
+                            command.ExecuteNonQuery();
+                            //--------------------------------  Delete WealthPlan   ----------------
+                            wealthPlanResponse.Message = "Success";
+                            wealthPlanResponse.Status = "OK";
+                        }
+                        break;
+                    case "I":
+                        if (!hasRows)
+                        {
+                            wealthPlanResponse.Message = "Data not found";
+                            wealthPlanResponse.Status = "Fail";
+                        }
+                        else
+                        {
+                            List<WealthPlanInfo> WealthPlaninfo = new List<WealthPlanInfo>();
+
+                            WealthPlanInfo wpi = null;
+                            //--------------------------------  Info WealthPlan   ----------------
+                            command.CommandType = CommandType.Text;
+                            command.CommandText = "select * from SrvA_WealthPlan_Cloud where Flag = 1 and WealthPlanName = @WealthPlanName and AccessToken in (select AccessToken from SrvA_Login_Cloud where Mobile_No = @Mobile_No)";
+
+                            command.Parameters.Clear();
+                            param = null;
+
+                            param = new SqlParameter("@WealthPlanName", System.Data.SqlDbType.NVarChar, 200);
+                            param.Value = wealthPlan.WealthPlanName == null ? "" : wealthPlan.WealthPlanName.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            param = new SqlParameter("@Mobile_No", System.Data.SqlDbType.NVarChar, 20);
+                            param.Value = wealthPlan.Mobile_No == null ? "" : wealthPlan.Mobile_No.Trim();
+                            param.Direction = ParameterDirection.Input;
+                            command.Parameters.Add(param);
+
+                            mySQLReader = command.ExecuteReader();
+
+                            while (mySQLReader.Read())
+                            {
+                                wpi = new WealthPlanInfo();
+
+                                wealthPlan.Balance_Sheet_Asset_Liquidity_Cash = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Liquidity_Cash"));
+                                wpi.Balance_Sheet_Asset_Liquidity_Cash = wealthPlan.Balance_Sheet_Asset_Liquidity_Cash;
+
+                                wealthPlan.Balance_Sheet_Asset_Liquidity_Deposit = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Liquidity_Deposit"));
+                                wpi.Balance_Sheet_Asset_Liquidity_Deposit = wealthPlan.Balance_Sheet_Asset_Liquidity_Deposit;
+
+                                wealthPlan.Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund"));
+                                wpi.Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund = wealthPlan.Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund;
+
+                                wealthPlan.Balance_Sheet_Asset_Invest_Mutual_Fund = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Invest_Mutual_Fund"));
+                                wpi.Balance_Sheet_Asset_Invest_Mutual_Fund = wealthPlan.Balance_Sheet_Asset_Invest_Mutual_Fund;
+
+                                wealthPlan.Balance_Sheet_Asset_Invest_Common_Stock = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Invest_Common_Stock"));
+                                wpi.Balance_Sheet_Asset_Invest_Common_Stock = wealthPlan.Balance_Sheet_Asset_Invest_Common_Stock;
+
+                                wealthPlan.Balance_Sheet_Asset_Invest_Bond = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Invest_Bond"));
+                                wpi.Balance_Sheet_Asset_Invest_Bond = wealthPlan.Balance_Sheet_Asset_Invest_Bond;
+
+                                wealthPlan.Balance_Sheet_Asset_Invest_Property = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Invest_Property"));
+                                wpi.Balance_Sheet_Asset_Invest_Property = wealthPlan.Balance_Sheet_Asset_Invest_Property;
+
+                                wealthPlan.Balance_Sheet_Asset_Invest_Other = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Invest_Other"));
+                                wpi.Balance_Sheet_Asset_Invest_Other = wealthPlan.Balance_Sheet_Asset_Invest_Other;
+
+                                wealthPlan.Balance_Sheet_Asset_Personal_Home = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Personal_Home"));
+                                wpi.Balance_Sheet_Asset_Personal_Home = wealthPlan.Balance_Sheet_Asset_Personal_Home;
+
+                                wealthPlan.Balance_Sheet_Asset_Personal_Car = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Personal_Car"));
+                                wpi.Balance_Sheet_Asset_Personal_Car = wealthPlan.Balance_Sheet_Asset_Personal_Car;
+
+                                wealthPlan.Balance_Sheet_Asset_Personal_Other = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Asset_Personal_Other"));
+                                wpi.Balance_Sheet_Asset_Personal_Other = wealthPlan.Balance_Sheet_Asset_Personal_Other;
+
+                                wealthPlan.Balance_Sheet_Liability_Short_Term_Credit_Card = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Liability_Short_Term_Credit_Card"));
+                                wpi.Balance_Sheet_Liability_Short_Term_Credit_Card = wealthPlan.Balance_Sheet_Liability_Short_Term_Credit_Card;
+
+                                wealthPlan.Balance_Sheet_Liability_Short_Term_Cash_Card = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Liability_Short_Term_Cash_Card"));
+                                wpi.Balance_Sheet_Liability_Short_Term_Cash_Card = wealthPlan.Balance_Sheet_Liability_Short_Term_Cash_Card;
+
+                                wealthPlan.Balance_Sheet_Liability_Long_Term_Home = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Liability_Long_Term_Home"));
+                                wpi.Balance_Sheet_Liability_Long_Term_Home = wealthPlan.Balance_Sheet_Liability_Long_Term_Home;
+
+                                wealthPlan.Balance_Sheet_Liability_Long_Term_Car = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Liability_Long_Term_Car"));
+                                wpi.Balance_Sheet_Liability_Long_Term_Car = wealthPlan.Balance_Sheet_Liability_Long_Term_Car;
+
+                                wealthPlan.Balance_Sheet_Liability_Long_Term_Other = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Balance_Sheet_Liability_Long_Term_Other"));
+                                wpi.Balance_Sheet_Liability_Long_Term_Other = wealthPlan.Balance_Sheet_Liability_Long_Term_Other;
+
+                                wealthPlan.Income_Salary_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Income_Salary_Month"));
+                                wpi.Income_Salary_Month = wealthPlan.Income_Salary_Month;
+
+                                wealthPlan.Income_Salary_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Income_Salary_Year"));
+                                wpi.Income_Salary_Year = wealthPlan.Income_Salary_Year;
+
+                                wealthPlan.Income_Bonus_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Income_Bonus_Month"));
+                                wpi.Income_Bonus_Month = wealthPlan.Income_Bonus_Month;
+
+                                wealthPlan.Income_Bonus_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Income_Bonus_Year"));
+                                wpi.Income_Bonus_Year = wealthPlan.Income_Bonus_Year;
+
+                                wealthPlan.Income_Other_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Income_Other_Month"));
+                                wpi.Income_Other_Month = wealthPlan.Income_Other_Month;
+
+                                wealthPlan.Income_Other_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Income_Other_Year"));
+                                wpi.Income_Other_Year = wealthPlan.Income_Other_Year;
+
+                                wealthPlan.Expense_Fix_Insurance_Premium_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Insurance_Premium_Month"));
+                                wpi.Expense_Fix_Insurance_Premium_Month = wealthPlan.Expense_Fix_Insurance_Premium_Month;
+
+                                wealthPlan.Expense_Fix_Insurance_Premium_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Insurance_Premium_Year"));
+                                wpi.Expense_Fix_Insurance_Premium_Year = wealthPlan.Expense_Fix_Insurance_Premium_Year;
+
+                                wealthPlan.Expense_Fix_Home_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Home_Month"));
+                                wpi.Expense_Fix_Home_Month = wealthPlan.Expense_Fix_Home_Month;
+
+                                wealthPlan.Expense_Fix_Home_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Home_Year"));
+                                wpi.Expense_Fix_Home_Year = wealthPlan.Expense_Fix_Home_Year;
+
+                                wealthPlan.Expense_Fix_Car_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Car_Month"));
+                                wpi.Expense_Fix_Car_Month = wealthPlan.Expense_Fix_Car_Month;
+
+                                wealthPlan.Expense_Fix_Car_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Car_Year"));
+                                wpi.Expense_Fix_Car_Year = wealthPlan.Expense_Fix_Car_Year;
+
+                                wealthPlan.Expense_Fix_Credit_Card_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Credit_Card_Month"));
+                                wpi.Expense_Fix_Credit_Card_Month = wealthPlan.Expense_Fix_Credit_Card_Month;
+
+                                wealthPlan.Expense_Fix_Credit_Card_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Credit_Card_Year"));
+                                wpi.Expense_Fix_Credit_Card_Year = wealthPlan.Expense_Fix_Credit_Card_Year;
+
+                                wealthPlan.Expense_Fix_Car_Insurance_Premium_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Car_Insurance_Premium_Month"));
+                                wpi.Expense_Fix_Car_Insurance_Premium_Month = wealthPlan.Expense_Fix_Car_Insurance_Premium_Month;
+
+                                wealthPlan.Expense_Fix_Car_Insurance_Premium_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Car_Insurance_Premium_Year"));
+                                wpi.Expense_Fix_Car_Insurance_Premium_Year = wealthPlan.Expense_Fix_Car_Insurance_Premium_Year;
+
+                                wealthPlan.Expense_Fix_Social_Security_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Social_Security_Month"));
+                                wpi.Expense_Fix_Social_Security_Month = wealthPlan.Expense_Fix_Social_Security_Month;
+
+                                wealthPlan.Expense_Fix_Social_Security_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Social_Security_Year"));
+                                wpi.Expense_Fix_Social_Security_Year = wealthPlan.Expense_Fix_Social_Security_Year;
+
+                                wealthPlan.Expense_Fix_Other_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Other_Month"));
+                                wpi.Expense_Fix_Other_Month = wealthPlan.Expense_Fix_Other_Month;
+
+                                wealthPlan.Expense_Fix_Other_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Fix_Other_Year"));
+                                wpi.Expense_Fix_Other_Year = wealthPlan.Expense_Fix_Other_Year;
+
+                                wealthPlan.Expense_Vary_Four_Requisites_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Four_Requisites_Month"));
+                                wpi.Expense_Vary_Four_Requisites_Month = wealthPlan.Expense_Vary_Four_Requisites_Month;
+
+                                wealthPlan.Expense_Vary_Four_Requisites_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Four_Requisites_Year"));
+                                wpi.Expense_Vary_Four_Requisites_Year = wealthPlan.Expense_Vary_Four_Requisites_Year;
+
+                                wealthPlan.Expense_Vary_Telephone_Charge_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Telephone_Charge_Month"));
+                                wpi.Expense_Vary_Telephone_Charge_Month = wealthPlan.Expense_Vary_Telephone_Charge_Month;
+
+                                wealthPlan.Expense_Vary_Telephone_Charge_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Telephone_Charge_Year"));
+                                wpi.Expense_Vary_Telephone_Charge_Year = wealthPlan.Expense_Vary_Telephone_Charge_Year;
+
+                                wealthPlan.Expense_Vary_Travelling_Expense_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Travelling_Expense_Month"));
+                                wpi.Expense_Vary_Travelling_Expense_Month = wealthPlan.Expense_Vary_Travelling_Expense_Month;
+
+                                wealthPlan.Expense_Vary_Travelling_Expense_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Travelling_Expense_Year"));
+                                wpi.Expense_Vary_Travelling_Expense_Year = wealthPlan.Expense_Vary_Travelling_Expense_Year;
+
+                                wealthPlan.Expense_Vary_Living_Allowance_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Living_Allowance_Month"));
+                                wpi.Expense_Vary_Living_Allowance_Month = wealthPlan.Expense_Vary_Living_Allowance_Month;
+
+                                wealthPlan.Expense_Vary_Living_Allowance_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Living_Allowance_Year"));
+                                wpi.Expense_Vary_Living_Allowance_Year = wealthPlan.Expense_Vary_Living_Allowance_Year;
+
+                                wealthPlan.Expense_Vary_Donation_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Donation_Month"));
+                                wpi.Expense_Vary_Donation_Month = wealthPlan.Expense_Vary_Donation_Month;
+
+                                wealthPlan.Expense_Vary_Donation_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Donation_Year"));
+                                wpi.Expense_Vary_Donation_Year = wealthPlan.Expense_Vary_Donation_Year;
+
+                                wealthPlan.Expense_Vary_Other_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Other_Month"));
+                                wpi.Expense_Vary_Other_Month = wealthPlan.Expense_Vary_Other_Month;
+
+                                wealthPlan.Expense_Vary_Other_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Vary_Other_Year"));
+                                wpi.Expense_Vary_Other_Year = wealthPlan.Expense_Vary_Other_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Saving_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Saving_Month"));
+                                wpi.Expense_Saving_and_Investing_Saving_Month = wealthPlan.Expense_Saving_and_Investing_Saving_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Saving_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Saving_Year"));
+                                wpi.Expense_Saving_and_Investing_Saving_Year = wealthPlan.Expense_Saving_and_Investing_Saving_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_RMF_Month"));
+                                wpi.Expense_Saving_and_Investing_Investing_RMF_Month = wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_RMF_Year"));
+                                wpi.Expense_Saving_and_Investing_Investing_RMF_Year = wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_LTF_Month"));
+                                wpi.Expense_Saving_and_Investing_Investing_LTF_Month = wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_LTF_Year"));
+                                wpi.Expense_Saving_and_Investing_Investing_LTF_Year = wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_PVF_Month"));
+                                wpi.Expense_Saving_and_Investing_Investing_PVF_Month = wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_PVF_Year"));
+                                wpi.Expense_Saving_and_Investing_Investing_PVF_Year = wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_Mutual_Fund_Month"));
+                                wpi.Expense_Saving_and_Investing_Investing_Mutual_Fund_Month = wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_Mutual_Fund_Year"));
+                                wpi.Expense_Saving_and_Investing_Investing_Mutual_Fund_Year = wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_Common_Stock_Month"));
+                                wpi.Expense_Saving_and_Investing_Investing_Common_Stock_Month = wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_Common_Stock_Year"));
+                                wpi.Expense_Saving_and_Investing_Investing_Common_Stock_Year = wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Year;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_Other_Month = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_Other_Month"));
+                                wpi.Expense_Saving_and_Investing_Investing_Other_Month = wealthPlan.Expense_Saving_and_Investing_Investing_Other_Month;
+
+                                wealthPlan.Expense_Saving_and_Investing_Investing_Other_Year = mySQLReader.GetDecimal(mySQLReader.GetOrdinal("Expense_Saving_and_Investing_Investing_Other_Year"));
+                                wpi.Expense_Saving_and_Investing_Investing_Other_Year = wealthPlan.Expense_Saving_and_Investing_Investing_Other_Year;
+
+                                WealthPlaninfo.Add(wpi);
+                            }
+                            mySQLReader.Close();
+                            //--------------------------------  Info WealthPlan   ----------------
+                            wealthPlanResponse.Data = WealthPlaninfo;
+                            wealthPlanResponse.Message = "Success";
+                            wealthPlanResponse.Status = "OK";
+                        }
                         break;
                     default:break;
                 }   //  end switch

@@ -16,45 +16,45 @@ namespace WebAPI06Application.Controllers
     //[EnableCors(origins: "http://localhost", headers: "*", methods: "*")]
     [EnableCors(origins: "*", headers: "*", methods: "*")]
 
-    [RoutePrefix("api/WealthPlanTarget")]
+    [RoutePrefix("api/WealthPlanTargetList")]
 
-    public class WealthPlanTargetController : ApiController
+    public class WealthPlanTargetListController : ApiController
     {
-        // GET: api/WealthPlanTarget
+        // GET: api/WealthPlanTargetList
         public IEnumerable<string> Get()
         {
             return new string[] { "Hello REST API", "I am Authorized" };
         }
 
-        // GET: api/WealthPlanTarget/5
+        // GET: api/WealthPlanTargetList/5
         public string Get(int id)
         {
             return "value";
         }
 
-        // POST: api/WealthPlanTarget
+        // POST: api/WealthPlanTargetList
         //public void Post([FromBody]string value)
-        //public WealthPlanTargetResponse Post([FromBody]string value)
-        public WealthPlanTargetResponse Post(WealthPlanTarget wealthPlanTarget)
+        //public WealthPlanTargetListResponse Post([FromBody]string value)
+        public WealthPlanTargetListResponse Post(WealthPlanTargetList wealthPlanTargetList)
         {
-            WealthPlanTargetPersistance wealthPlanTargetPersistance = new WealthPlanTargetPersistance();
-            if (wealthPlanTargetPersistance == null)
+            WealthPlanTargetListPersistance wealthPlanTargetListPersistance = new WealthPlanTargetListPersistance();
+            if (wealthPlanTargetListPersistance == null)
             {
                 throw new HttpResponseException(new HttpResponseMessage(HttpStatusCode.NotFound));
             }
 
             //WealthPlanTarget wealthPlanTarget = new WealthPlanTarget();
 
-            return wealthPlanTargetPersistance.GetWealthPlanTarget(wealthPlanTarget);
+            return wealthPlanTargetListPersistance.GetWealthPlanTargetList(wealthPlanTargetList);
         }
 
 
-        // PUT: api/WealthPlanTarget/5
+        // PUT: api/WealthPlanTargetList/5
         public void Put(int id, [FromBody]string value)
         {
         }
 
-        // DELETE: api/WealthPlan/5
+        // DELETE: api/WealthPlanTargetList/5
         public void Delete(int id)
         {
         }

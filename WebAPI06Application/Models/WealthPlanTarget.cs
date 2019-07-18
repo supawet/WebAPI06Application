@@ -23,7 +23,10 @@ namespace WebAPI06Application.Models
 
     public class WealthPlanTarget
     {
+        public string Action { get; set; }
         public string AccessToken { get; set; }
+        public string WealthPlanTargetName { get; set; }
+        public string Mobile_No { get; set; }
         public double Amount_Needed { get; set; }
         public double Investment_Period { get; set; }
         public double Initial_Investment { get; set; }
@@ -34,6 +37,7 @@ namespace WebAPI06Application.Models
 
     public class WealthPlanTargetResponse
     {
+        //public List<WealthPlanTargetInfo> Data { get; set; }
         public string Target { get; set; }
         public double? Target_Month { get; set; }
         public double? Target_Amount { get; set; }
@@ -48,5 +52,15 @@ namespace WebAPI06Application.Models
         public List<Proceeds> Plot { get; set; }
         public string Message { get; set; }
         public string Status { get; set; }
+    }
+
+    public class WealthPlanTargetInfo
+    {
+        public double Amount_Needed { get; set; }
+        public double Investment_Period { get; set; }
+        public double Initial_Investment { get; set; }
+        public double Investment_Per_Month { get; set; }
+        public int Investment_Risk { get; set; }
+        //public double Interest { get; set; }
     }
 }
