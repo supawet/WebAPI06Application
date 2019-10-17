@@ -52,6 +52,7 @@ namespace WebAPI06Application
             decimal Expense_Fix = 0;
             decimal Expense_Fix_Sub = 0;
             decimal Expense_Saving_and_Investing = 0;
+            decimal Expense_Saving_and_Investing_per_month = 0;
             decimal Expense_Vary = 0;
 
             decimal Total_Asset = 0;
@@ -64,6 +65,7 @@ namespace WebAPI06Application
             decimal Ability_To_Pay_Mid_Term_Debt = 0;
             decimal Payment_Of_Debt_From_Income = 0;
             decimal Saving_Analysis_Result = 0;
+            decimal Investment_Asset = 0;
 
             decimal Ratio_Liability_Per_Asset = 0;
 
@@ -82,8 +84,12 @@ namespace WebAPI06Application
 
                 SqlParameter param = null;
 
+                NumberFormatInfo nfi2 = new CultureInfo("en-US", false).NumberFormat;
+                nfi2.NumberDecimalDigits = 2;
+                nfi2.NegativeSign = "";
+
                 //wealthPlan.AccessToken = "test2";    //for test only
-                
+
                 if (wealthPlan.AccessToken == null || wealthPlan.AccessToken.Trim() == "")
                 {
                     //wealthPlan.AccessToken = "test2";    //for test only
@@ -114,7 +120,7 @@ namespace WebAPI06Application
                     wealthPlanResponse.Status = "Fail";
                     return wealthPlanResponse;
                 }   //  end if wealthPlan.Action not in A,D,U,I
-
+                
                 //  start Main
                 //--------------------------------  Check Access Token   ----------------
 
@@ -170,6 +176,7 @@ namespace WebAPI06Application
 
                 switch (wealthPlan.Action.ToUpper()) {
                     case "A":
+                        
                         if (hasRows)
                         {
                             wealthPlanResponse.Message = "WealthPlanName can not be duplicate";
@@ -177,6 +184,7 @@ namespace WebAPI06Application
                         }
                         else
                         {
+                        
                             //--------------------------------  Insert WealthPlan   ----------------
                             command.CommandType = CommandType.Text;
                             command.CommandText = "insert into SrvA_WealthPlan_Cloud(AccessToken," +
@@ -572,7 +580,9 @@ namespace WebAPI06Application
                             //--------------------------------  /Insert WealthPlan  ----------------
                             wealthPlanResponse.Message = "Success";
                             wealthPlanResponse.Status = "OK";
+                        
                         }
+                        
                         break;
                     case "U":
                         if (!hasRows)
@@ -1262,8 +1272,8 @@ namespace WebAPI06Application
                     default:break;
                 }   //  end switch
 
-
-                //--------------------------- Calculate  --------------------------------
+                /*
+                //--------------------------- Calculate  --------------------------------  ver 01
                 Balance_Sheet_Asset_Liquidity = wealthPlan.Balance_Sheet_Asset_Liquidity_Cash + wealthPlan.Balance_Sheet_Asset_Liquidity_Deposit + wealthPlan.Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund;
 
                 Balance_Sheet_Asset_Personal = wealthPlan.Balance_Sheet_Asset_Personal_Home + wealthPlan.Balance_Sheet_Asset_Personal_Car + wealthPlan.Balance_Sheet_Asset_Personal_Other;
@@ -1278,6 +1288,8 @@ namespace WebAPI06Application
                 Total_Liability = Balance_Sheet_Liability_Short_Term + Balance_Sheet_Liability_Long_Term;
                 Total_Wealth = Total_Asset - Total_Liability;
 
+                Investment_Asset = Balance_Sheet_Asset_Personal == 0 ? 0 : Balance_Sheet_Asset_Invest / Balance_Sheet_Asset_Personal;
+
                 Total_Income = (wealthPlan.Income_Salary_Month * 12) + wealthPlan.Income_Salary_Year + (wealthPlan.Income_Bonus_Month * 12) + wealthPlan.Income_Bonus_Year + (wealthPlan.Income_Other_Month * 12) + wealthPlan.Income_Other_Year;
 
                 Expense_Fix = (wealthPlan.Expense_Fix_Insurance_Premium_Month * 12) + wealthPlan.Expense_Fix_Insurance_Premium_Year + (wealthPlan.Expense_Fix_Home_Month * 12) + wealthPlan.Expense_Fix_Home_Year + (wealthPlan.Expense_Fix_Car_Month * 12) + wealthPlan.Expense_Fix_Car_Year + (wealthPlan.Expense_Fix_Credit_Card_Month * 12) + wealthPlan.Expense_Fix_Credit_Card_Year + (wealthPlan.Expense_Fix_Car_Insurance_Premium_Month * 12) + wealthPlan.Expense_Fix_Car_Insurance_Premium_Year + (wealthPlan.Expense_Fix_Social_Security_Month * 12) + wealthPlan.Expense_Fix_Social_Security_Year + (wealthPlan.Expense_Fix_Other_Month * 12) + wealthPlan.Expense_Fix_Other_Year;
@@ -1291,9 +1303,35 @@ namespace WebAPI06Application
 
                 Total_Expense = Expense_Fix + Expense_Saving_and_Investing + Expense_Vary;
 
-                Liquidity_Analysis_Result = Balance_Sheet_Asset_Liquidity / ((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12);
+                Liquidity_Analysis_Result = ((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12) == 0 ? 0 : Balance_Sheet_Asset_Liquidity / ((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12);
+
+                if(Liquidity_Analysis_Result < 3)
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : แนะนำให้เพิ่มสภาพคล่อง " + (((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12) * 3).ToString("n", nfi2) + " บาท";
+                }
+                else if(Liquidity_Analysis_Result <= 6)
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : เหมาะสมแล้ว";
+                }
+                else
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : ควรนำเงิน " + (Balance_Sheet_Asset_Liquidity - (((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12)*6)).ToString("n", nfi2) + " บาทไปลงทุน";
+                }
 
                 Ability_To_Pay_Short_Term_Debt = Balance_Sheet_Liability_Short_Term == 0 ? 0 : Balance_Sheet_Asset_Liquidity / Balance_Sheet_Liability_Short_Term; //0;// P81 / P91;
+
+                if(Ability_To_Pay_Short_Term_Debt ==  0)
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary += " ความสามารถในการชำระหนี้ระยะสั้น : คุณไม่มีหนี้ระยะสั้น";
+                }
+                else if(Ability_To_Pay_Short_Term_Debt < 1)
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary += " ความสามารถในการชำระหนี้ระยะสั้น : แนะนำให้เพิ่มสภาพคล่อง " + (Balance_Sheet_Liability_Short_Term - Balance_Sheet_Asset_Liquidity).ToString("n", nfi2) + " บาท";
+                }
+                else
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary += " ความสามารถในการชำระหนี้ระยะสั้น : คุณมีความสามารถในการชำระหนี้ระยะสั้น";
+                }
 
                 Ability_To_Pay_Mid_Term_Debt = Total_Income == 0 ? 0 : Expense_Fix_Sub / Total_Income;
 
@@ -1301,8 +1339,184 @@ namespace WebAPI06Application
 
                 Ratio_Liability_Per_Asset = Total_Asset == 0 ? 0 : Total_Liability / Total_Asset;
 
+                if (Ratio_Liability_Per_Asset <= 0)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณไม่มีหนี้";
+                }
+                else if(Ratio_Liability_Per_Asset <= (decimal)0.5)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณมีภาระหนี้ในระดับที่เหมาะสม";
+                }
+                else if (Ratio_Liability_Per_Asset <= 1)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณมีภาระหนี้ใกล้เคียงกับสินทรัพย์ ควรลดหนี้ "  + (Total_Liability - (Total_Asset/2)).ToString("n", nfi2) + " บาท";
+                }
+                else
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณมีภาระหนี้มากกว่าสินทรัพย์ ควรลดหนี้ " + (Total_Liability - (Total_Asset / 2)).ToString("n", nfi2) + " บาท";
+                }
+
+                if(Payment_Of_Debt_From_Income <= (decimal)0.35)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary += " และการชำระหนี้สินคืนจากรายได้ : คุณมีความสามารถในการผ่อนชำระหนี้สินในแต่ละเดือน";
+                }
+                else if (Payment_Of_Debt_From_Income <= (decimal)0.35)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary += " และการชำระหนี้สินคืนจากรายได้ : คุณมีภาระผ่อนชำระหนี้สินแต่ละเดือนค่อนข้างมาก ควรลดภาระผ่อนลงเดือนละ " + (Balance_Sheet_Asset_Invest - (Total_Asset * (decimal)0.35)).ToString("n", nfi2) + " บาท";
+                }
+                else
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary += " และการชำระหนี้สินคืนจากรายได้ : คุณมีภาระผ่อนชำระหนี้สินมากเกินไป ควรลดภาระผ่อนลงเดือนละ " + (Balance_Sheet_Asset_Invest - (Total_Asset * (decimal)0.35)).ToString("n", nfi2) + " บาท";
+                }
+
                 Saving_Analysis_Result = Total_Income == 0 ? 0 : Expense_Saving_and_Investing / Total_Income;
 
+                if(Saving_Analysis_Result >= (decimal)0.1)
+                {
+                    wealthPlanResponse.Saving_Analysis_Result_Summary = "การออม : คุณมีวินัยในการออมต่อเดือนที่ดี";
+                }
+                else
+                {
+                    wealthPlanResponse.Saving_Analysis_Result_Summary = "การออม : คุณควรเพิ่มการออม";
+                }
+
+                if(Investment_Asset < (decimal)0.3)
+                {
+                    wealthPlanResponse.Saving_Analysis_Result_Summary += " และสินทรัพย์ลงทุน : คุณควรเพิ่มสินทรัพย์เพื่อการลงทุน";
+                }
+                else
+                {
+                    wealthPlanResponse.Saving_Analysis_Result_Summary += " และสินทรัพย์ลงทุน : คุณมีสินทรัพย์เพื่อการลงทุนที่เหมาะสม";
+                }
+                //--------------------------- Calculate  --------------------------------  /ver 12
+                */
+
+
+                //--------------------------- Calculate  --------------------------------  ver 02
+                Balance_Sheet_Asset_Liquidity = wealthPlan.Balance_Sheet_Asset_Liquidity_Cash + wealthPlan.Balance_Sheet_Asset_Liquidity_Deposit + wealthPlan.Balance_Sheet_Asset_Liquidity_Fixed_Income_Fund;
+
+                Balance_Sheet_Asset_Personal = wealthPlan.Balance_Sheet_Asset_Personal_Home + wealthPlan.Balance_Sheet_Asset_Personal_Car + wealthPlan.Balance_Sheet_Asset_Personal_Other;
+
+                Balance_Sheet_Asset_Invest = wealthPlan.Balance_Sheet_Asset_Invest_Mutual_Fund + wealthPlan.Balance_Sheet_Asset_Invest_Common_Stock + wealthPlan.Balance_Sheet_Asset_Invest_Bond + wealthPlan.Balance_Sheet_Asset_Invest_Property + wealthPlan.Balance_Sheet_Asset_Invest_Other;
+
+                Balance_Sheet_Liability_Short_Term = wealthPlan.Balance_Sheet_Liability_Short_Term_Credit_Card + wealthPlan.Balance_Sheet_Liability_Short_Term_Cash_Card;
+
+                Balance_Sheet_Liability_Long_Term = wealthPlan.Balance_Sheet_Liability_Long_Term_Home + wealthPlan.Balance_Sheet_Liability_Long_Term_Car + wealthPlan.Balance_Sheet_Liability_Long_Term_Other;
+
+                Total_Asset = Balance_Sheet_Asset_Liquidity + Balance_Sheet_Asset_Personal + Balance_Sheet_Asset_Invest;
+                Total_Liability = Balance_Sheet_Liability_Short_Term + Balance_Sheet_Liability_Long_Term;
+                Total_Wealth = Total_Asset - Total_Liability;
+
+                //Investment_Asset = Balance_Sheet_Asset_Personal == 0 ? 0 : Balance_Sheet_Asset_Invest / Balance_Sheet_Asset_Personal;
+                Investment_Asset = Balance_Sheet_Asset_Personal == 0 ? 0 : Balance_Sheet_Asset_Invest / Total_Wealth;
+                
+                Total_Income = (wealthPlan.Income_Salary_Month * 12) + wealthPlan.Income_Salary_Year + (wealthPlan.Income_Bonus_Month * 12) + wealthPlan.Income_Bonus_Year + (wealthPlan.Income_Other_Month * 12) + wealthPlan.Income_Other_Year;
+
+                Expense_Fix = (wealthPlan.Expense_Fix_Insurance_Premium_Month * 12) + wealthPlan.Expense_Fix_Insurance_Premium_Year + (wealthPlan.Expense_Fix_Home_Month * 12) + wealthPlan.Expense_Fix_Home_Year + (wealthPlan.Expense_Fix_Car_Month * 12) + wealthPlan.Expense_Fix_Car_Year + (wealthPlan.Expense_Fix_Credit_Card_Month * 12) + wealthPlan.Expense_Fix_Credit_Card_Year + (wealthPlan.Expense_Fix_Car_Insurance_Premium_Month * 12) + wealthPlan.Expense_Fix_Car_Insurance_Premium_Year + (wealthPlan.Expense_Fix_Social_Security_Month * 12) + wealthPlan.Expense_Fix_Social_Security_Year + (wealthPlan.Expense_Fix_Other_Month * 12) + wealthPlan.Expense_Fix_Other_Year;
+
+                //Expense_Fix_Sub = (wealthPlan.Expense_Fix_Home_Month * 12) + wealthPlan.Expense_Fix_Home_Year + (wealthPlan.Expense_Fix_Car_Month * 12) + wealthPlan.Expense_Fix_Car_Year + (wealthPlan.Expense_Fix_Credit_Card_Month * 12) + wealthPlan.Expense_Fix_Credit_Card_Year;
+                Expense_Fix_Sub = (wealthPlan.Expense_Fix_Home_Month * 12) + (wealthPlan.Expense_Fix_Car_Month * 12) + (wealthPlan.Expense_Fix_Credit_Card_Month * 12);
+
+
+                Expense_Saving_and_Investing = (wealthPlan.Expense_Saving_and_Investing_Saving_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Saving_Year + (wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Year + (wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Year + (wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Year + (wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Year + (wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Year + (wealthPlan.Expense_Saving_and_Investing_Investing_Other_Month * 12) + wealthPlan.Expense_Saving_and_Investing_Investing_Other_Year;
+
+                Expense_Saving_and_Investing_per_month = wealthPlan.Expense_Saving_and_Investing_Saving_Month + wealthPlan.Expense_Saving_and_Investing_Investing_RMF_Month + wealthPlan.Expense_Saving_and_Investing_Investing_LTF_Month + wealthPlan.Expense_Saving_and_Investing_Investing_PVF_Month + wealthPlan.Expense_Saving_and_Investing_Investing_Mutual_Fund_Month + wealthPlan.Expense_Saving_and_Investing_Investing_Common_Stock_Month + wealthPlan.Expense_Saving_and_Investing_Investing_Other_Month;
+
+                Expense_Vary = (wealthPlan.Expense_Vary_Four_Requisites_Month * 12) + wealthPlan.Expense_Vary_Four_Requisites_Year + (wealthPlan.Expense_Vary_Telephone_Charge_Month * 12) + wealthPlan.Expense_Vary_Telephone_Charge_Year + (wealthPlan.Expense_Vary_Travelling_Expense_Month * 12) + wealthPlan.Expense_Vary_Travelling_Expense_Year + (wealthPlan.Expense_Vary_Living_Allowance_Month * 12) + wealthPlan.Expense_Vary_Living_Allowance_Year + (wealthPlan.Expense_Vary_Donation_Month * 12) + wealthPlan.Expense_Vary_Donation_Year + (wealthPlan.Expense_Vary_Other_Month * 12) + wealthPlan.Expense_Vary_Other_Year;
+
+                Total_Expense = Expense_Fix + Expense_Saving_and_Investing + Expense_Vary;
+
+                Liquidity_Analysis_Result = ((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12) == 0 ? 0 : Balance_Sheet_Asset_Liquidity / ((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12);
+
+                if (Liquidity_Analysis_Result < 3)
+                {
+                    //wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : แนะนำให้เพิ่มสภาพคล่อง " + (((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12) * 3).ToString("n", nfi2) + " บาท";
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : แนะนำให้เพิ่มสภาพคล่อง " + (((((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12) * 3)- Balance_Sheet_Asset_Liquidity)).ToString("n", nfi2) + " บาท ";
+                }
+                else if (Liquidity_Analysis_Result <= 6)
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : เหมาะสมแล้ว ";
+                }
+                else
+                {
+                    wealthPlanResponse.Liquidity_Analysis_Result_Summary = "สภาพคล่องพื้นฐาน : ควรนำเงิน " + (Balance_Sheet_Asset_Liquidity - (((Expense_Fix + Expense_Saving_and_Investing + Expense_Vary) / 12) * 6)).ToString("n", nfi2) + " บาทไปลงทุน ";
+                }
+
+                Ability_To_Pay_Short_Term_Debt = Balance_Sheet_Liability_Short_Term == 0 ? 0 : Balance_Sheet_Asset_Liquidity / Balance_Sheet_Liability_Short_Term; //0;// P81 / P91;
+
+                if (Ability_To_Pay_Short_Term_Debt == 0)
+                {
+                    wealthPlanResponse.Ability_To_Pay_Short_Term_Debt_Summary = "ความสามารถในการชำระหนี้ระยะสั้น : คุณไม่มีหนี้ระยะสั้น ";
+                }
+                else if (Ability_To_Pay_Short_Term_Debt < 1)
+                {
+                    wealthPlanResponse.Ability_To_Pay_Short_Term_Debt_Summary = "ความสามารถในการชำระหนี้ระยะสั้น : แนะนำให้เพิ่มสภาพคล่อง " + (Balance_Sheet_Liability_Short_Term - Balance_Sheet_Asset_Liquidity).ToString("n", nfi2) + " บาท ";
+                }
+                else
+                {
+                    wealthPlanResponse.Ability_To_Pay_Short_Term_Debt_Summary = "ความสามารถในการชำระหนี้ระยะสั้น : คุณมีความสามารถในการชำระหนี้ระยะสั้น ";
+                }
+
+                Ability_To_Pay_Mid_Term_Debt = Total_Income == 0 ? 0 : Expense_Fix_Sub / Total_Income;
+
+                //Payment_Of_Debt_From_Income = Total_Asset == 0 ? 0 : Balance_Sheet_Asset_Invest / Total_Asset;
+                Payment_Of_Debt_From_Income = wealthPlan.Income_Salary_Month == 0 ? 0 : (Expense_Fix_Sub / 12) / wealthPlan.Income_Salary_Month;
+
+                Ratio_Liability_Per_Asset = Total_Asset == 0 ? 0 : Total_Liability / Total_Asset;
+
+                if (Ratio_Liability_Per_Asset <= 0)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณไม่มีหนี้ ";// (" + Ratio_Liability_Per_Asset + ")";
+                }
+                else if (Ratio_Liability_Per_Asset <= (decimal)0.5)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณมีภาระหนี้ในระดับที่เหมาะสม ";// (" + Ratio_Liability_Per_Asset + ")";
+                }
+                else if (Ratio_Liability_Per_Asset <= 1)
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ :"/*(" + Ratio_Liability_Per_Asset + ") :*/+ " คุณมีภาระหนี้ใกล้เคียงกับสินทรัพย์ ควรลดหนี้ " + (Total_Liability - (Total_Asset / 2)).ToString("n", nfi2) + " บาท ";
+                }
+                else
+                {
+                    wealthPlanResponse.Liability_Analysis_Result_Summary = "หนี้สินต่อสินทรัพย์ : คุณมีภาระหนี้มากกว่าสินทรัพย์ ควรลดหนี้ " + (Total_Liability - (Total_Asset / 2)).ToString("n", nfi2) + " บาท ";
+                }
+
+                if (Payment_Of_Debt_From_Income <= (decimal)0.35)
+                {
+                    wealthPlanResponse.Payment_Of_Debt_From_Income_Summary += "การชำระหนี้สินคืนจากรายได้ในแต่ละเดือน : คุณมีความสามารถในการผ่อนชำระหนี้สินในแต่ละเดือน ";// (" + Payment_Of_Debt_From_Income + ")";
+                }/*
+                else if (Payment_Of_Debt_From_Income > (decimal)0.35)
+                {
+                    //wealthPlanResponse.Liability_Analysis_Result_Summary += " การชำระหนี้สินคืนจากรายได้ : คุณมีภาระผ่อนชำระหนี้สินแต่ละเดือนค่อนข้างมาก ควรลดภาระผ่อนลงเดือนละ " + (Balance_Sheet_Asset_Invest - (Total_Asset * (decimal)0.35)).ToString("n", nfi2) + " บาท";
+                    wealthPlanResponse.Liability_Analysis_Result_Summary += " การชำระหนี้สินคืนจากรายได้ในแต่ละเดือน : คุณมีภาระผ่อนชำระหนี้สินแต่ละเดือนค่อนข้างมาก ควรลดภาระผ่อนลงเดือนละ " + ((Expense_Fix_Sub / 12) - (wealthPlan.Income_Salary_Month * (decimal)0.35)).ToString("n", nfi2) + " บาท";// (" + Payment_Of_Debt_From_Income + ")";
+                }*/
+                else
+                {
+                    //wealthPlanResponse.Liability_Analysis_Result_Summary += " การชำระหนี้สินคืนจากรายได้ : คุณมีภาระผ่อนชำระหนี้สินมากเกินไป ควรลดภาระผ่อนลงเดือนละ " + (Balance_Sheet_Asset_Invest - (Total_Asset * (decimal)0.35)).ToString("n", nfi2) + " บาท";
+                    wealthPlanResponse.Payment_Of_Debt_From_Income_Summary += "การชำระหนี้สินคืนจากรายได้ในแต่ละเดือน : คุณมีภาระผ่อนชำระหนี้สินมากเกินไป ควรลดภาระผ่อนลงเดือนละ " + ((Expense_Fix_Sub/12) - (wealthPlan.Income_Salary_Month * (decimal)0.35)).ToString("n", nfi2) + " บาท ";// (" + Payment_Of_Debt_From_Income + ")";
+                }
+
+                //Saving_Analysis_Result = Total_Income == 0 ? 0 : Expense_Saving_and_Investing / Total_Income;
+                Saving_Analysis_Result = wealthPlan.Income_Salary_Month == 0 ? 0 : Expense_Saving_and_Investing_per_month / (wealthPlan.Income_Salary_Month + wealthPlan.Income_Bonus_Month + wealthPlan.Income_Other_Month);
+                
+
+                if (Saving_Analysis_Result >= (decimal)0.1)
+                {
+                    wealthPlanResponse.Saving_Analysis_Result_Summary = "การออม : คุณมีวินัยในการออมเฉลี่ยต่อเดือนที่ดี ";// (" + Saving_Analysis_Result + ")";
+                }
+                else
+                {
+                    wealthPlanResponse.Saving_Analysis_Result_Summary = "การออม : คุณควรเพิ่มการออม ";// (" + Saving_Analysis_Result + ")";
+                }
+
+                if (Investment_Asset < (decimal)0.3)
+                {
+                    wealthPlanResponse.Investment_Asset_Summary += "สินทรัพย์ลงทุน : คุณควรเพิ่มสินทรัพย์เพื่อการลงทุน ";// (" + Investment_Asset + ")";
+                }
+                else
+                {
+                    wealthPlanResponse.Investment_Asset_Summary += "สินทรัพย์ลงทุน : คุณมีสินทรัพย์เพื่อการลงทุนที่เหมาะสม ";// (" + Investment_Asset + ")";
+                }
                 wealthPlanResponse.Total_Asset = Total_Asset;
                 wealthPlanResponse.Total_Liability = Total_Liability;
                 wealthPlanResponse.Total_Wealth = Total_Wealth;
@@ -1314,6 +1528,8 @@ namespace WebAPI06Application
                 wealthPlanResponse.Ability_To_Pay_Mid_Term_Debt = Math.Round(Ability_To_Pay_Mid_Term_Debt, 4);
                 wealthPlanResponse.Payment_Of_Debt_From_Income = Math.Round(Payment_Of_Debt_From_Income, 4);
                 wealthPlanResponse.Saving_Analysis_Result = Math.Round(Saving_Analysis_Result, 4);
+                wealthPlanResponse.Investment_Asset = Math.Round(Investment_Asset, 4);
+                
                 //--------------------------- /Calculate  --------------------------------
 
                 //  end Main

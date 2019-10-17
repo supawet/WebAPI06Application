@@ -409,6 +409,12 @@ namespace WebAPI06Application
                                 wealthPlanTargetResponse.Investment_Per_Month = mySQLReader.GetDouble(mySQLReader.GetOrdinal("Investment_Per_Month"));
                                 wealthPlanTargetResponse.Investment_Risk = mySQLReader.GetInt32(mySQLReader.GetOrdinal("Investment_Risk"));
 
+                                wealthPlanTarget.Amount_Needed = wealthPlanTargetResponse.Amount_Needed;
+                                wealthPlanTarget.Investment_Period = wealthPlanTargetResponse.Investment_Period;
+                                wealthPlanTarget.Initial_Investment = wealthPlanTargetResponse.Initial_Investment;
+                                wealthPlanTarget.Investment_Per_Month = wealthPlanTargetResponse.Investment_Per_Month;
+                                wealthPlanTarget.Investment_Risk = wealthPlanTargetResponse.Investment_Risk;
+
                                 //WealthPlanTargetinfo.Add(wpti);
                             }
                             mySQLReader.Close();
@@ -421,23 +427,26 @@ namespace WebAPI06Application
                     default: break;
                 }   //  end switch
 
-                /*  -------------   คำอธิบาย  -------------
-                    lowest = ต่ำสุด
-                    downtrend = ขาลง
-                    normL= ปกติ L
-                    normH = ปกติ H
-                    uptrend = ขาขึ้น
-                */
-                //  -------------   ค่า z-Score  -------------
-                Dictionary<string, double> zScore = new Dictionary<string, double>(){
+                if (wealthPlanTargetResponse.Status == "OK")
+                {
+                    /*  -------------   คำอธิบาย  -------------
+                        lowest = ต่ำสุด
+                        downtrend = ขาลง
+                        normL= ปกติ L
+                        normH = ปกติ H
+                        uptrend = ขาขึ้น
+                    */
+                    //  -------------   ค่า z-Score  -------------
+                    Dictionary<string, double> zScore = new Dictionary<string, double>(){
                     { "lowest", -1.9600},
                     { "downtrend", -1.1503},
                     { "normL", 0.0000},
                     { "normH", 1.1503},
                     { "uptrend", 1.9600}
                 };
-                //  -------------   ผลตอบแทนตามความเสี่ยง  -------------
-                Dictionary<int, ExpectedReturn> expectedReturn = new Dictionary<int, ExpectedReturn>(){
+                    //  -------------   ผลตอบแทนตามความเสี่ยง  -------------
+                    /*
+                    Dictionary<int, ExpectedReturn> expectedReturn = new Dictionary<int, ExpectedReturn>(){
                     { 1, new ExpectedReturn { SD= 0.0176, RET= 0.0464 }},
                     { 2, new ExpectedReturn { SD= 0.0335, RET= 0.0609 }},
                     { 3, new ExpectedReturn { SD= 0.0335, RET= 0.0609 }},
@@ -446,9 +455,20 @@ namespace WebAPI06Application
                     { 6, new ExpectedReturn { SD= 0.0667, RET= 0.0863 }},
                     { 7, new ExpectedReturn { SD= 0.0667, RET= 0.0863 }},
                     { 8, new ExpectedReturn { SD= 0.0990, RET= 0.1600 }}
-                };
+                };*/
+                 Dictionary<int, ExpectedReturn> expectedReturn = new Dictionary<int, ExpectedReturn>(){
+                    { 1, new ExpectedReturn { SD= 0.0170, RET= 0.0427 }},
+                    { 2, new ExpectedReturn { SD= 0.0324, RET= 0.0560 }},
+                    { 3, new ExpectedReturn { SD= 0.0324, RET= 0.0560 }},
+                    { 4, new ExpectedReturn { SD= 0.0324, RET= 0.0560 }},
+                    { 5, new ExpectedReturn { SD= 0.0467, RET= 0.0646 }},
+                    { 6, new ExpectedReturn { SD= 0.0639, RET= 0.0781 }},
+                    { 7, new ExpectedReturn { SD= 0.0639, RET= 0.0781 }},
+                    { 8, new ExpectedReturn { SD= 0.0945, RET= 0.0941 }}
+                }; 
 
-                Proceeds proceeds = null;
+
+                 Proceeds proceeds = null;
                 //Suggest an alternative
 
                 double futureValue = 0;
@@ -457,7 +477,7 @@ namespace WebAPI06Application
                 double separateGraph = 0;
 
                 //int periodLoop = (int)wealthPlanTarget.Investment_Period * 12 * 5;
-                int periodLoop = 180;
+                int periodLoop = 240;
                 double endingWealthTarget = 0;  //เป้าหมายที่ได้
 
                 for (int i = 1; i <= periodLoop; i++) {
@@ -494,7 +514,7 @@ namespace WebAPI06Application
                 }else if(separateGraph <= 120){
                     periodLoop = 120;
                 }else{
-                    periodLoop = 180;
+                    periodLoop = 240;   //180
                 }
                 for (int i = 1; i <= periodLoop; i++)
                 {
@@ -524,30 +544,35 @@ namespace WebAPI06Application
                     endingWealth = (wealthPlanTarget.Amount_Needed - (wealthPlanTarget.Investment_Per_Month * ((Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop)) - 1) / (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0))) / (Math.Pow(1 +
     (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop));
 
-                      //  if (endingWealth >= wealthPlanTarget.Amount_Needed) break;
-                    //}
+                        //  if (endingWealth >= wealthPlanTarget.Amount_Needed) break;
+                        //}
 
-                    wealthPlanTargetResponse.Recommended_Choice2 = Math.Round(endingWealth, MidpointRounding.AwayFromZero);
-                    //----------------- /เพิ่มเงินลงทุนตั้งต้น(บาท) --------------------------
+                        //wealthPlanTargetResponse.Recommended_Choice2 = Math.Round(endingWealth, MidpointRounding.AwayFromZero);
+                        wealthPlanTargetResponse.Recommended_Choice2 = Math.Floor(endingWealth)+1;
+                        //----------------- /เพิ่มเงินลงทุนตั้งต้น(บาท) --------------------------
 
-                    //----------------- เพิ่มเงินลงทุนต่อเดือน(บาท) --------------------------
-                    for (int i = 1000; i <= 100000; i++)
+                        //----------------- เพิ่มเงินลงทุนต่อเดือน(บาท) --------------------------
+                        /*
+                        for (int i = 1000; i <= 100000; i++)
                     {
-                        endingWealth = (wealthPlanTarget.Amount_Needed - i * (Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop))) / ((Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop)) - 1) * (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0);
+                            endingWealth = (wealthPlanTarget.Amount_Needed - i * (Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop))) / ((Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop)) - 1) * (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0);
+                            
 
                         if (endingWealth >= wealthPlanTarget.Amount_Needed) break;
+                        }
+                        */
+                        endingWealth = (wealthPlanTarget.Amount_Needed -    (wealthPlanTarget.Initial_Investment * (Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop)))    ) * (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0)    /    ((Math.Pow(1 + (expectedReturn[wealthPlanTarget.Investment_Risk].RET / 12.0), periodLoop)) - 1);
+
+                        //wealthPlanTargetResponse.Recommended_Choice3 = Math.Round(endingWealth, MidpointRounding.AwayFromZero);
+                        wealthPlanTargetResponse.Recommended_Choice3 = Math.Floor(endingWealth)+1;
+                        //----------------- เพิ่มเงินลงทุนต่อเดือน(บาท) --------------------------
                     }
 
-                    wealthPlanTargetResponse.Recommended_Choice3 = Math.Round(endingWealth, MidpointRounding.AwayFromZero);
-                    //----------------- เพิ่มเงินลงทุนต่อเดือน(บาท) --------------------------
-                }
 
-                if (wealthPlanTargetResponse.Status == "OK")
-                {
                     wealthPlanTargetResponse.Plot = proceedsArrayTmp;
-                }
-                
-                
+                }   //wealthPlanTargetResponse.Status == "OK")
+
+
                 //wealthPlanTargetResponse.Message = "Success";
                 //wealthPlanTargetResponse.Status = "OK";
 

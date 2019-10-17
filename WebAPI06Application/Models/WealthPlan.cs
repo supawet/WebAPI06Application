@@ -85,10 +85,17 @@ namespace WebAPI06Application.Models
         public decimal Total_Expense { get; set; }
         public decimal Liquidity_Analysis_Result { get; set; }
         public decimal Ability_To_Pay_Short_Term_Debt { get; set; }
+        public string Liquidity_Analysis_Result_Summary { get; set; }
+        public string Ability_To_Pay_Short_Term_Debt_Summary { get; set; }
         public decimal Ratio_Liability_Per_Asset { get; set; }
         public decimal Ability_To_Pay_Mid_Term_Debt { get; set; }
+        public string Liability_Analysis_Result_Summary { get; set; }
+        public string Payment_Of_Debt_From_Income_Summary { get; set; }
         public decimal Saving_Analysis_Result { get; set; }
         public decimal Payment_Of_Debt_From_Income { get; set; }
+        public decimal Investment_Asset { get; set; }
+        public string Saving_Analysis_Result_Summary { get; set; }
+        public string Investment_Asset_Summary { get; set; }
         public string Message { get; set; }
         public string Status { get; set; }
     }

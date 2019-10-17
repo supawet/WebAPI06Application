@@ -19,6 +19,8 @@ namespace WebAPI06Application
             //config.SuppressDefaultHostAuthentication();
             //config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
 
+            config.EnableCors();
+
             // Web API routes
             config.MapHttpAttributeRoutes();
 
